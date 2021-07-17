@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <title>Hello World</title>
+</head>
+
+<body>
+    <div class="container-fluid p-3 bg-dark text-white">
+        <h5 id="con_h1">connecting...</h5>
+        <div class="row mb-3">
+            <button type="button" class="col mx-3 btn btn-warning btn-lg">START</button>
+            <button type="button" class="col mx-3 btn btn-danger btn-lg disabled">STOP</button>
+        </div>
+        <h5 id="status_h1">status_h1</h5>
+    </div>
+
+
+    <div class="container-fluid p-3 bg-dark text-white">
+        <button class="border-0 rounded-0 btn btn-secondary btn-block shadow-none my-1" data-toggle="collapse"
+            data-target="#settings">Settings</button>
+        <div id="settings" class="collapse py-3">
+            <table class="table table-sm table-striped table-dark w-auto">
+                <tr>
+                    <td><label>X P</label></td>
+                    <td><input autofocus id="xp" value="2" type="number"></td>
+                    <td><button onclick="return onSubmit('xp')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>X I</label></td>
+                    <td><input autofocus id="xi" value="1" type="number"></td>
+                    <td><button onclick="return onSubmit('xi')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>X D</label></td>
+                    <td><input autofocus id="xd" value="1" type="number"></td>
+                    <td><button onclick="return onSubmit('xd')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>Y P</label></td>
+                    <td><input autofocus id="yp" value="2" type="number"></td>
+                    <td><button onclick="return onSubmit('yp')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>Y I</label></td>
+                    <td><input autofocus id="yi" value="1" type="number"></td>
+                    <td><button onclick="return onSubmit('yi')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>Y D</label></td>
+                    <td><input autofocus id="yd" value="1" type="number"></td>
+                    <td><button onclick="return onSubmit('yd')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>out_scale</label></td>
+                    <td><input autofocus id="os" value="0.2" type="number"></td>
+                    <td><button onclick="return onSubmit('os')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>servo_scale</label></td>
+                    <td><input autofocus id="ss" value="100" type="number"></td>
+                    <td><button onclick="return onSubmit('ss')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>motor_speed</label></td>
+                    <td><input autofocus id="ms" value="400" type="number"></td>
+                    <td><button onclick="return onSubmit('ms')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>turn_diff</label></td>
+                    <td><input autofocus id="td" value="400" type="number"></td>
+                    <td><button onclick="return onSubmit('td')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>turn_max_t</label></td>
+                    <td><input autofocus id="tm" value="10" type="number"></td>
+                    <td><button onclick="return onSubmit('tm')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>turn_cooldown</label></td>
+                    <td><input autofocus id="tc" value="3" type="number"></td>
+                    <td><button onclick="return onSubmit('tc')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>move_max_t</label></td>
+                    <td><input autofocus id="mm" value="10" type="number"></td>
+                    <td><button onclick="return onSubmit('mm')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>move_cooldown</label></td>
+                    <td><input autofocus id="mc" value="3" type="number"></td>
+                    <td><button onclick="return onSubmit('mc')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>offset_in_x</label></td>
+                    <td><input autofocus id="ox" value="3" type="number"></td>
+                    <td><button onclick="return onSubmit('ox')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>offset_in_y</label></td>
+                    <td><input autofocus id="oy" value="3" type="number"></td>
+                    <td><button onclick="return onSubmit('oy')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>limit_pid_x</label></td>
+                    <td><input autofocus id="lx" value="3" type="number"></td>
+                    <td><button onclick="return onSubmit('lx')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>limit_pid_y</label></td>
+                    <td><input autofocus id="ly" value="3" type="number"></td>
+                    <td><button onclick="return onSubmit('ly')">submit</button></td>
+                </tr>
+                <tr>
+                    <td><label>range limit</label></td>
+                    <td><input autofocus id="maxpid" value="1" type="number"></td>
+                    <td><button onclick="return onSubmit('maxpid')">submit</button></td>
+                </tr>
+            </table>
+        </div>
+
+        <button class="border-0 rounded-0 btn btn-secondary btn-block shadow-none my-1" data-toggle="collapse"
+            data-target="#manual-ctrl">Manual Move</button>
+        <div id="manual-ctrl" class="collapse py-3">
+            
+        </div>
+    </div>
+
+
+
+
+    <script type="text/javascript" src="main.js">
+
+    </script>
+</body>
+
+</html>
