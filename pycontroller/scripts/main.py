@@ -117,10 +117,38 @@ class WS(WebSocket):
         elif cmd == 'get_walk_params':
             params = getWalkParams()
 
-            dict
+            paramsDict = {
+                "init_x_offset" : params.init_x_offset,             
+                "init_y_offset" : params.init_y_offset,
+                "init_z_offset" : params.init_z_offset,
+                "init_roll_offset" : params.init_roll_offset,
+                "init_pitch_offset" : params.init_pitch_offset,
+                "init_yaw_offset" : params.init_yaw_offset,
+                "period_time" : params.period_time,
+                "dsp_ratio" : params.dsp_ratio,
+                "step_fb_ratio" : params.step_fb_ratio,
+                "x_move_amplitude" : params.x_move_amplitude,
+                "y_move_amplitude" : params.y_move_amplitude,
+                "z_move_amplitude" : params.z_move_amplitude,
+                "angle_move_amplitude" : params.angle_move_amplitude,
+                "move_aim_on" : params.move_aim_on,
+                "balance_enable" : params.balance_enable,
+                "balance_hip_roll_gain" : params.balance_hip_roll_gain,
+                "balance_knee_gain" : params.balance_knee_gain,
+                "balance_ankle_roll_gain" : params.balance_ankle_roll_gain,
+                "balance_ankle_pitch_gain" : params.balance_ankle_pitch_gain,
+                "y_swap_amplitude" : params.y_swap_amplitude,
+                "z_swap_amplitude" : params.z_swap_amplitude,
+                "arm_swing_gain" : params.arm_swing_gain,
+                "pelvis_offset" : params.pelvis_offset,
+                "hip_pitch_offset" : params.hip_pitch_offset,
+                "p_gain" : params.p_gain,
+                "i_gain" : params.i_gain,
+                "d_gain" : params.d_gain        
+            }
 
             print("return param type: ")
-            print(json.dumps())
+            print(json.dumps(paramsDict))
 
 
         #for client in clients:
