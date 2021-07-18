@@ -13,10 +13,17 @@ from simple_websocket_server import WebSocketServer, WebSocket
 
 from std_msgs.msg import String
 from robotis_controller_msgs.msg import SyncWriteItem
+from op3_walking_module_msgs.msg import WalkingParam
+from op3_walking_module_msgs.srv import GetWalkingParam
 
-pub = rospy.Publisher('/robotis/sync_write_item', SyncWriteItem, queue_size=10)
+pubSWI = rospy.Publisher('/robotis/sync_write_item', SyncWriteItem, queue_size=10)
+pubBT = rospy.Publisher('/robotis/open_cr/button', String, queue_size=10)
+pubEnaMod = rospy.Publisher('/robotis/enable_ctrl_module', String, queue_size=10)
+pubWalkCmd = rospy.Publisher('/robotis/walking/command', String, queue_size=10)
 
 server = None
+
+robotIsOn = True
 
 joints = [
     "head_pan",
@@ -42,17 +49,50 @@ joints = [
 ]
 
 def setDxlTorque(isTorqueOn):
+    global robotIsOn
+
+    if (robotIsOn == False and isTorqueOn == 0):
+        return
+    else:
+        robotIsOn = False
+
+    if (robotIsOn == True and isTorqueOn == 1):
+        return
+    else:
+        robotIsOn = True
+
     syncwrite_msg = SyncWriteItem()
     syncwrite_msg.item_name = "torque_enable"
     for joint_name in joints:
         syncwrite_msg.joint_name.append(joint_name)
-        syncwrite_msg.value.append(isTorqueOn)
+        syncwrite_msg.value.append(isTorqueOn) 
+
+    pubSWI.publish(syncwrite_msg)
+
+def startRobot():
+    # global robotIsOn
+    # if robotIsOn == True:
+    #     return
     
-    timeout = 0
+    # time.sleep(1)
+    # robotIsOn = True
+    pubBT.publish("user_long")
 
-    pub.publish(syncwrite_msg)
+def enableWalk():
+    pubEnaMod.publish("walking_module")
 
+def setWalkCmd(walkCmd):
+    if walkCmd == "start" or walkCmd == "stop" or walkCmd == "balance on" or walkCmd == "balance off" or walkCmd == "save":
+        pubWalkCmd.publish(walkCmd)
 
+def getWalkParams():
+    rospy.wait_for_service('/robotis/walking/get_params')
+    try:
+        getParams = rospy.ServiceProxy('/robotis/walking/get_params', GetWalkingParam)
+        resp = getParams()
+        return resp.parameters
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
 
 clients = []
 
@@ -65,9 +105,23 @@ class WS(WebSocket):
         cmd = data['cmd']
 
         if cmd == 'torque_on':
-            setDxlTorque(1)
-        if cmd == 'torque_off':
+            startRobot()
+        elif cmd == 'torque_off':
             setDxlTorque(0)
+        elif cmd == 'ena_walk':
+            enableWalk()
+        elif cmd == 'start_walk':
+            setWalkCmd("start")
+        elif cmd == 'stop_walk':
+            setWalkCmd("stop")
+        elif cmd == 'get_walk_params':
+            params = getWalkParams()
+
+            dict
+
+            print("return param type: ")
+            print(json.dumps())
+
 
         #for client in clients:
         #    client.send_message(self.address[0] + u' - ' + self.data)
