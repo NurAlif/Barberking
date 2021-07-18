@@ -82,3 +82,27 @@ document.querySelector("#bt_stop").addEventListener("click", function(event) {
     sendCmd("torque_off");
     console.log("torqueoff");
 }, false);
+
+document.querySelector("#bt_ena_walk").addEventListener("click", function(event) {
+    event.preventDefault();
+    sendCmd("ena_walk");
+    console.log("ena_walk");
+}, false);
+
+document.querySelector("#bt_start_walk").addEventListener("click", function(event) {
+    event.preventDefault();
+    sendCmd("start_walk");
+    console.log("start_walk");
+}, false);
+
+document.querySelector("#bt_stop_walk").addEventListener("click", function(event) {
+    event.preventDefault();
+    sendCmd("stop_walk");
+    console.log("stop_walk");
+}, false);
+
+document.querySelector("#bt_get_walk_params").addEventListener("click", function(event) {
+    event.preventDefault();
+    sendCmd("get_walk_params");
+    console.log("get_walk_params");
+}, false);
