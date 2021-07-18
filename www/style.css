@@ -8,3 +8,8 @@ body {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
 }
+
+.cbCustom {
+    height: 26px;
+    width: 26px;
+}
