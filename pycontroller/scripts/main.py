@@ -21,9 +21,40 @@ pubBT = rospy.Publisher('/robotis/open_cr/button', String, queue_size=10)
 pubEnaMod = rospy.Publisher('/robotis/enable_ctrl_module', String, queue_size=10)
 pubWalkCmd = rospy.Publisher('/robotis/walking/command', String, queue_size=10)
 
+currentWalkParams = None
+
 server = None
 
 robotIsOn = True
+
+class Vector2:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+class Vector2yaw:
+    def __init__(self, x, y, yaw):
+        self.x = x
+        self.y = y
+        self.yaw = yaw
+
+class Walking:
+    def __init__(self):
+        self.turn_mode_yaw = True
+        self.max_speed = 40
+        self.stationary_offset = Vector2yaw(0.0,0.0,0.0)
+        self.accel = 0.2
+        self.feed_rate = 10
+        self.turn_speed = 2
+        self.x_multiplier = 1
+        self.y_multiplier = 1
+        self.yaw_multiplier = 1
+
+        self.x = 0
+        self.y = 0
+        self.yaw = 0
+
+walking = Walking()
 
 joints = [
     "head_pan",
@@ -70,12 +101,6 @@ def setDxlTorque(isTorqueOn):
     pubSWI.publish(syncwrite_msg)
 
 def startRobot():
-    # global robotIsOn
-    # if robotIsOn == True:
-    #     return
-    
-    # time.sleep(1)
-    # robotIsOn = True
     pubBT.publish("user_long")
 
 def enableWalk():
@@ -85,39 +110,20 @@ def setWalkCmd(walkCmd):
     if walkCmd == "start" or walkCmd == "stop" or walkCmd == "balance on" or walkCmd == "balance off" or walkCmd == "save":
         pubWalkCmd.publish(walkCmd)
 
+def setWalkParams(param):
+        currentWalkParams[param[0]] = param[1]
+
+def sendWalking(vector2yaw):
+    global walking
+
 def getWalkParams():
+    global currentWalkParams
     rospy.wait_for_service('/robotis/walking/get_params')
     try:
         getParams = rospy.ServiceProxy('/robotis/walking/get_params', GetWalkingParam)
         resp = getParams()
-        return resp.parameters
-    except rospy.ServiceException as e:
-        print("Service call failed: %s"%e)
-
-clients = []
-
-class WS(WebSocket):
-    def handle(self):
-        print(self.address, 'receive data: ', self.data)
-
-        data = json.loads(self.data)
-
-        cmd = data['cmd']
-
-        if cmd == 'torque_on':
-            startRobot()
-        elif cmd == 'torque_off':
-            setDxlTorque(0)
-        elif cmd == 'ena_walk':
-            enableWalk()
-        elif cmd == 'start_walk':
-            setWalkCmd("start")
-        elif cmd == 'stop_walk':
-            setWalkCmd("stop")
-        elif cmd == 'get_walk_params':
-            params = getWalkParams()
-
-            paramsDict = {
+        params = resp.parameters
+        paramsDict = {
                 "init_x_offset" : params.init_x_offset,             
                 "init_y_offset" : params.init_y_offset,
                 "init_z_offset" : params.init_z_offset,
@@ -145,14 +151,44 @@ class WS(WebSocket):
                 "p_gain" : params.p_gain,
                 "i_gain" : params.i_gain,
                 "d_gain" : params.d_gain        
+        }
+        currentWalkParams = paramsDict
+        return paramsDict
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+
+clients = []
+
+class WS(WebSocket):
+    def handle(self):
+        print(self.address, 'receive data: ', self.data)
+
+        data = json.loads(self.data)
+
+        cmd = data['cmd']
+
+        if cmd == 'torque_on':
+            startRobot()
+        elif cmd == 'torque_off':
+            setDxlTorque(0)
+        elif cmd == 'ena_walk':
+            enableWalk()
+        elif cmd == 'start_walk':
+            setWalkCmd("start")
+        elif cmd == 'stop_walk':
+            setWalkCmd("stop")
+        elif cmd == 'get_walk_params':
+            params = getWalkParams()
+            resp = {
+                "cmd" : "update_walk_params",
+                "params" : params
             }
-
-            print("return param type: ")
-            print(json.dumps(paramsDict))
-
-
-        #for client in clients:
-        #    client.send_message(self.address[0] + u' - ' + self.data)
+            respJson = json.dumps(resp)
+            for client in clients:
+                client.send_message(respJson)
+        elif cmd == 'set_walk_params':
+            setWalkParams(data['param'])
+            
 
     def connected(self):
         print(self.address, 'connected')

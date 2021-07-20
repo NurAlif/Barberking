@@ -13,3 +13,84 @@ body {
     height: 26px;
     width: 26px;
 }
+
+.pos_editor{
+    position:absolute;
+    left:0;
+    top:0;
+}
+
+.opacity_editor{
+    opacity: 0.3;
+}
+.opacity_editor_zero{
+    opacity: 0.5;
+}
+
+.indicator-bar{
+    position:absolute;
+}
+
+.indicator-bar-horizontal{
+    width:150px;
+    height:20px;
+}
+
+.indicator-bar-vertical{
+    width:20px;
+    height:150px;
+}
+
+.strip{
+    background-color:darkgrey;
+    position: absolute;
+}
+
+.strip-vertical{
+    height:2px;
+    width:10px;
+}
+
+.strip-horizontal{
+    width:2px;
+    height:10px;
+}
+
+.strip-center-v{
+    height:2px;
+    width:20px;
+    background-color:red;
+}
+
+.strip-center-h{
+    width:2px;
+    height:20px;
+    background-color:red;
+}
+
+
+#analog_container{
+    position:absolute;
+    width: 250px;
+    height: 250px;
+    left: 10px;
+    bottom: 10px;
+}
+
+#analog_area{
+    position:absolute;
+    background-color: #44ffffff;
+}
+
+.analog-line{
+    position:absolute;
+    background-color: black;
+}
+
+#analog_pointer{
+    background-color: #ffffff;
+    opacity: 0.3;
+    position:absolute;
+    width: 40px;
+    height: 40px;
+}
