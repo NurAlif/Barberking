@@ -32,6 +32,10 @@ var analog_pointer_size = 40;
 var on_analog_edit = false;
 var mouse_on_analog = false;
 
+var analogValue = new Vector2(0.0,0.0);
+
+var isHoldMode = false;
+
 function initAnalog(){
 
     //analog_container
@@ -102,7 +106,7 @@ function initAnalog(){
 
 }
 
-function setAnalogIndicator(isVertical, element, value) {
+function setAnalogIndicator(isVertical, element, value) { // value normalized to .5
     if(isVertical){
         element.style.top = bar_length - (value + 0.5) * (bar_length) - (indicator_analog_size/2) -4 + "px";
     }else{
@@ -112,11 +116,19 @@ function setAnalogIndicator(isVertical, element, value) {
 
 function setAnalogPointer(x,y) {
 
+    analogValue.y = y*2; // normalized to 1
+    analogValue.x = x*2; // normalized to 1
+
     setAnalogIndicator(true, pointer_tar_v_bar, y);
     setAnalogIndicator(false, pointer_tar_h_bar, x);
 
     analog_pointer.style.bottom = (y + 0.5) * (area_dimens.y) - (analog_pointer_size/2) + "px";
     analog_pointer.style.left = (x + 0.5) * (area_dimens.x) - (analog_pointer_size/2) + "px";
+}
+
+function setAnalogFeedback(x,y) {
+    setAnalogIndicator(true, pointer_v_bar, y);
+    setAnalogIndicator(false, pointer_h_bar, x);
 }
 
 initAnalog();
@@ -153,7 +165,8 @@ document.querySelector("*").addEventListener("mouseup", function(e) {
     e.preventDefault();
     if (e.which == 1) {
         
-        setAnalogPointer(0,0);
+        if(!isHoldMode)
+            setAnalogPointer(0,0);
         on_analog_edit = false;
 
     }

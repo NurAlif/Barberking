@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from _typeshed import Self
 import signal
 import sys
 
@@ -13,19 +14,24 @@ from simple_websocket_server import WebSocketServer, WebSocket
 
 from std_msgs.msg import String
 from robotis_controller_msgs.msg import SyncWriteItem
+from robotis_controller_msgs.msg import StatusMsg
 from op3_walking_module_msgs.msg import WalkingParam
+from sensor_msgs.msg import Imu
 from op3_walking_module_msgs.srv import GetWalkingParam
 
 pubSWI = rospy.Publisher('/robotis/sync_write_item', SyncWriteItem, queue_size=10)
 pubBT = rospy.Publisher('/robotis/open_cr/button', String, queue_size=10)
 pubEnaMod = rospy.Publisher('/robotis/enable_ctrl_module', String, queue_size=10)
 pubWalkCmd = rospy.Publisher('/robotis/walking/command', String, queue_size=10)
+pubSetParams = rospy.Publisher('/robotis/walking/set_params', String, queue_size=10)
 
-currentWalkParams = None
+currentWalkParams = None # ? params
+walkParams = None
 
 server = None
 
 robotIsOn = True
+walking_module_enabled = False
 
 class Vector2:
     def __init__(self, x, y):
@@ -37,24 +43,134 @@ class Vector2yaw:
         self.x = x
         self.y = y
         self.yaw = yaw
+    
+    @staticmethod
+    def multiply(a, b):
+        temp = Vector2yaw(0,0,0)
+        temp.x = a.x * b.x
+        temp.y = a.y * b.y
+        temp.yaw = a.yaw * b.yaw
+        return temp
+
+    @staticmethod
+    def add(a, b):
+        temp = Vector2yaw(0,0,0)
+        temp.x = a.x + b.x
+        temp.y = a.y + b.y
+        temp.yaw = a.yaw + b.yaw
+        return temp
+    
+    def set(self, target):
+        self.x = target.x
+        self.y = target.y
+        self.yaw = target.yaw
+
+    def stepToTarget(self, target, step):
+        if(self.x < target.x): 
+            self.x += step.x
+            if self.x > target.x: self.x = target.x
+        elif(self.x > target.x): 
+            self.x -= step.x
+            if self.x < target.x: self.x = target.x
+
+        if(self.y < target.y): 
+            self.y += step.y
+            if self.y > target.y: self.y = target.y
+        elif(self.y > target.y): 
+            self.y -= step.y
+            if self.y < target.y: self.y = target.y
+
+        if(self.yaw < target.yaw): 
+            self.yaw += step.yaw
+            if self.yaw > target.yaw: self.yaw = target.yaw
+        elif(self.yaw > target.yaw): 
+            self.yaw -= step.yaw
+            if self.yaw < target.yaw: self.yaw = target.yaw
+
+
+CONTROL_MODE_HEADLESS = 0
+CONTROL_MODE_YAWMODE = 1
 
 class Walking:
     def __init__(self):
-        self.turn_mode_yaw = True
+        global CONTROL_MODE_YAWMODE
+        global CONTROL_MODE_HEADLESS
+        self.control = None # held controller socket id
+        self.turn_mode = CONTROL_MODE_YAWMODE
         self.max_speed = 40
         self.stationary_offset = Vector2yaw(0.0,0.0,0.0)
-        self.accel = 0.2
         self.feed_rate = 10
-        self.turn_speed = 2
-        self.x_multiplier = 1
-        self.y_multiplier = 1
-        self.yaw_multiplier = 1
+        self.step = Vector2yaw(1,1,1)
+        self.vectorMultiplier = Vector2yaw(1,1,1)
+        self.vectorCurrent = Vector2yaw(0,0,0)
+        self.vectorTarget = Vector2yaw(0,0,0) # normalized
 
-        self.x = 0
-        self.y = 0
-        self.yaw = 0
+    def setTarget(self, newTarget): # normalized input
+        self.vectorTarget = Vector2yaw.add(Vector2yaw.multiply(newTarget * self.vectorMultiplier),self.stationary_offset)
+
+    def stepToTargetVel(self):
+        self.vectorCurrent.stepToTarget(self.target, self.step)
+
+    def sendWithWalkParams(self):
+        if(self.control == None): return
+
+        global walkParams
+        global pubSetParams
+        walkParams.x_move_amplitude = self.vectorCurrent.x
+        walkParams.y_move_amplitude = self.vectorCurrent.y
+        walkParams.angle_move_amplitude = self.vectorCurrent.yaw
+        
+        pubSetParams.publish(walkParams)
+        send_message(-1, "update_walking", self.getWalkingCurrent())
+    
+    def setWalkingOffset(self):
+        self.stationary_offset.set(self.vectorCurrent)
+
+    def setWalkingConf(self, confDict):
+        if confDict[0] == 'max_speed': self.max_speed = confDict[1]
+        elif confDict[0] == 'stationary_offset':
+            confOffset = confDict[1]
+            self.stationary_offset.x = confOffset[0]
+            self.stationary_offset.y = confOffset[1]
+            self.stationary_offset.yaw = confOffset[2]
+        elif confDict[0] == 'feed_rate': self.feed_rate = confDict[1]
+        elif confDict[0] == 'step':
+            confStep = confDict[1]
+            if(confStep[0] == "xy"):
+                self.step.x = confStep[1]
+                self.step.y = confStep[1]
+            elif(confStep[0] == "yaw"):
+                self.step.yaw = confStep[1]
+        elif confDict[0] == 'multipler':
+            confStep = confDict[1]
+            if(confStep[0] == "xy"):
+                self.step.x = confStep[1]
+                self.step.y = confStep[1]
+            elif(confStep[0] == "yaw"):
+                self.step.yaw = confStep[1]
+        elif confDict[0] == 'turn_mode': self.turn_mode = confDict[1]
+    def getWalkingConf(self):
+        offset = self.stationary_offset
+        multiplier = self.vectorMultiplier
+        step = self.step
+        confDict = {
+            'control': self.control,
+            'max_speed': self.max_speed,
+            'turn_mode': self.turn_mode,
+            'stationary_offset': [offset.x, offset.y, offset.yaw],
+            'feed_rate': self.feed_rate,
+            'step':[step.x, step.y, step.yaw],
+            'multiplier': [multiplier.x, multiplier.y, multiplier.yaw]
+        }
+        return confDict
+    def getWalkingCurrent(self):
+        current = self.vectorCurrent
+        array = [current.x, current.y, current.yaw]
+        return array
 
 walking = Walking()
+
+
 
 joints = [
     "head_pan",
@@ -78,6 +194,12 @@ joints = [
     "r_sho_pitch",
     "r_sho_roll"
 ]
+
+def enableWalk():
+    global walking_module_enabled
+    if walking_module_enabled == False:
+        walking_module_enabled = True
+        pubEnaMod.publish("walking_module")
 
 def setDxlTorque(isTorqueOn):
     global robotIsOn
@@ -103,26 +225,55 @@ def setDxlTorque(isTorqueOn):
 def startRobot():
     pubBT.publish("user_long")
 
-def enableWalk():
-    pubEnaMod.publish("walking_module")
-
 def setWalkCmd(walkCmd):
     if walkCmd == "start" or walkCmd == "stop" or walkCmd == "balance on" or walkCmd == "balance off" or walkCmd == "save":
         pubWalkCmd.publish(walkCmd)
 
 def setWalkParams(param):
-        currentWalkParams[param[0]] = param[1]
+    global walkParam
 
-def sendWalking(vector2yaw):
-    global walking
+    paramName = param[0]
+    paramValue = param[1]
+
+    if paramName == "init_x_offset" : walkParams.init_x_offset = paramValue
+    elif paramName == "init_y_offset" : walkParams.init_y_offset = paramValue
+    elif paramName == "init_z_offset" : walkParams.init_z_offset = paramValue
+    elif paramName == "init_roll_offset" : walkParams.init_roll_offset = paramValue
+    elif paramName == "init_pitch_offset" : walkParams.init_pitch_offset = paramValue
+    elif paramName == "init_yaw_offset" : walkParams.init_yaw_offset = paramValue
+    elif paramName == "period_time" : walkParams.period_time = paramValue
+    elif paramName == "dsp_ratio" : walkParams.dsp_ratio = paramValue
+    elif paramName == "step_fb_ratio" : walkParams.step_fb_ratio = paramValue
+    elif paramName == "x_move_amplitude" : walkParams.x_move_amplitude = paramValue
+    elif paramName == "y_move_amplitude" : walkParams.y_move_amplitude = paramValue
+    elif paramName == "z_move_amplitude" : walkParams.z_move_amplitude = paramValue
+    elif paramName == "angle_move_amplitude" : walkParams.angle_move_amplitude = paramValue
+    elif paramName == "move_aim_on" : walkParams.move_aim_on = paramValue
+    elif paramName == "balance_enable" : walkParams.balance_enable = paramValue
+    elif paramName == "balance_hip_roll_gain" : walkParams.balance_hip_roll_gain = paramValue
+    elif paramName == "balance_knee_gain" : walkParams.balance_knee_gain = paramValue
+    elif paramName == "balance_ankle_roll_gain" : walkParams.balance_ankle_roll_gain = paramValue
+    elif paramName == "balance_ankle_pitch_gain" : walkParams.balance_ankle_pitch_gain = paramValue
+    elif paramName == "y_swap_amplitude" : walkParams.y_swap_amplitude = paramValue
+    elif paramName == "z_swap_amplitude" : walkParams.z_swap_amplitude = paramValue
+    elif paramName == "arm_swing_gain" : walkParams.arm_swing_gain = paramValue
+    elif paramName == "pelvis_offset" : walkParams.pelvis_offset = paramValue
+    elif paramName == "hip_pitch_offset" : walkParams.hip_pitch_offset = paramValue
+    elif paramName == "p_gain" : walkParams.p_gain = paramValue
+    elif paramName == "i_gain" : walkParams.i_gain = paramValue
+    elif paramName == "d_gain" : walkParams.d_gain = paramValue
+
+    pubSetParams.publish(walkParams)
 
 def getWalkParams():
     global currentWalkParams
+    global walkParams
     rospy.wait_for_service('/robotis/walking/get_params')
     try:
         getParams = rospy.ServiceProxy('/robotis/walking/get_params', GetWalkingParam)
         resp = getParams()
         params = resp.parameters
+        walkParams = params
         paramsDict = {
                 "init_x_offset" : params.init_x_offset,             
                 "init_y_offset" : params.init_y_offset,
@@ -157,7 +308,41 @@ def getWalkParams():
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)
 
-clients = []
+clients = {}
+
+
+def send_message(id, cmd, params):
+    resp = {
+        "cmd" : cmd,
+        "params" : params
+    }
+    respJson = json.dumps(resp)
+    if(id < 0):
+        clients[id].send_message(respJson)
+    else:
+        for client in clients.values():
+            client.send_message(respJson)
+
+def init_gyro():
+    init_gyro_msg = SyncWriteItem()
+    init_gyro_msg.item_name = "imu_control"
+    init_gyro_msg.joint_name.append("open-cr")
+    init_gyro_msg.value.append(8)
+    pubSWI.publish(init_gyro_msg)
+
+imu = Imu()
+
+def handleImu(imu_msg_):
+    global imu
+    imu = imu_msg_
+
+def handleStatusMsg(statusMsg):
+    statusDict = {
+        'type':statusMsg.type,
+        'module_name':statusMsg.module_name,
+        'status_msg':statusMsg.status_msg
+    }
+    send_message(-1, 'update_status', statusDict)
 
 class WS(WebSocket):
     def handle(self):
@@ -169,39 +354,60 @@ class WS(WebSocket):
 
         if cmd == 'torque_on':
             startRobot()
+            send_message(-1, "torque_control", True)
         elif cmd == 'torque_off':
             setDxlTorque(0)
-        elif cmd == 'ena_walk':
-            enableWalk()
+            send_message(-1, "torque_control", False)
         elif cmd == 'start_walk':
             setWalkCmd("start")
+            send_message(-1, "walk_control", True)
         elif cmd == 'stop_walk':
             setWalkCmd("stop")
+        elif cmd == 'save_walk_params':
+            setWalkCmd("save")
+            send_message(-1, "walk_params_saved", True)
         elif cmd == 'get_walk_params':
-            params = getWalkParams()
-            resp = {
-                "cmd" : "update_walk_params",
-                "params" : params
-            }
-            respJson = json.dumps(resp)
-            for client in clients:
-                client.send_message(respJson)
+            if currentWalkParams == None: getWalkParams()
+            send_message(-1, "update_walk_params", currentWalkParams)
         elif cmd == 'set_walk_params':
-            setWalkParams(data['param'])
-            
+            setWalkParams(data['params'])
+            send_message(-1, "controller_msg", 'Walk params changed')
+        elif cmd == 'set_walking':
+            if(self.address[1] == walking.control):
+                vectorDict = data['params']
+                vector = Vector2yaw(vectorDict["x"], vectorDict["y"], vectorDict["yaw"])
+                walking.setTarget(vector)
+        elif cmd == 'set_walking_offset':
+            walking.setWalkingOffset()
+            send_message(-1, "controller_msg", 'Walking offset changed')
+        elif cmd == 'set_walking_conf':
+            walking.setWalkingConf(data['params'])
+            send_message(-1, "controller_msg", 'Walking configuration changed')
+        elif cmd == 'set_control_walking':
+            if data['params'] == 1:
+                walking.control = self.address[1]
+                send_message(-1, "control_override", self.address)
+            else:
+                walking.control = None
+                send_message(-1, "control_override", -1)
+        elif cmd == 'get_walking_conf':
+            send_message(-1, "update_walking_conf", walking.getWalkingConf())
+        elif cmd == 'get_walking':
+            send_message(self.address[1], "update_walking", walking.getWalkingConf())
+        elif cmd == 'gyro_init':
+            init_gyro()
+            send_message(-1, "controller_msg", "Init gyro success")
 
     def connected(self):
         print(self.address, 'connected')
-        for client in clients:
-            client.send_message(self.address[0] + u' - connected')
-        clients.append(self)
-
+        clients[self.address[1]] = self
+        send_message(self.address[1], "device_connected", self.address)
 
     def handle_close(self):
-        clients.remove(self)
+        clients.pop(self.address.pop)
         print(self.address, 'closed')
-        for client in clients:
-            client.send_message(self.address[0] + u' - disconnected')
+        send_message(-1, "device_disconnected", self.address)
+
 
 def forever_ws(num):
     global server
@@ -216,8 +422,15 @@ t1 = threading.Thread(target=forever_ws, args=(10,))
 def main():
     t1.start()
     rospy.init_node('main', anonymous=True)
+
+    #rospy.Subscriber("/robotis/open_cr/imu", Imu, handleImu)
+    rospy.Subscriber("/robotis/status", StatusMsg, handleStatusMsg)
+    enableWalk()
     print("program runnning")
-    rospy.spin()
+    rate = rospy.Rate(walking.feed_rate) # 10hz
+    while not rospy.is_shutdown():
+        walking.sendWithWalkParams()
+        rate.sleep()
 
 
 def close_sig_handler(signal, frame):

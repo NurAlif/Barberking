@@ -94,3 +94,32 @@ body {
     width: 40px;
     height: 40px;
 }
+
+.bg-black{
+    background-color:black;
+    color:darkcyan;
+    height: 70px;
+    overflow-x:hidden;
+    -ms-overflow-style: none;
+    scrollbar-width: none; 
+}
+
+.bg-black::-webkit-scrollbar {
+    display: none;
+}
+
+.log{
+    color:darkgray;
+    margin:0px;
+    padding: 0px;
+    font-size: 11px;
+    font-family: monospace;
+}
+
+.log-title{
+    margin: 0px;
+    position: absolute;
+    right: 0px;
+    color: black;
+    font-weight: bold;
+}
