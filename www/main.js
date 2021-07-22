@@ -1,4 +1,4 @@
-ws = new WebSocket("ws://"+ "localhost" +":8077");
+ws = new WebSocket("ws://"+ "192.168.43.187" +":8077");
             
 var con_h1 = document.getElementById("con_h1");
 var bt_torque_toggle = document.querySelector("#bt_torque_toggle");
@@ -200,35 +200,34 @@ setEnabledWalkingConf(false);
 setEnabledSettings(false);
 
 function updateWalkParams(params){
-    paramElements[0].value = params.init_x_offset;
-    paramElements[1].value = params.init_y_offset;
-    paramElements[2].value = params.init_z_offset;
-    paramElements[3].value = params.init_roll_offset;
-    paramElements[4].value = params.init_pitch_offset;
-    paramElements[5].value = params.init_yaw_offset;
-    paramElements[6].value = params.period_time;
-    paramElements[7].value = params.dsp_ratio;
-    paramElements[8].value = params.step_fb_ratio;
-    paramElements[9].value = params.x_move_amplitude;
-    paramElements[10].value = params.y_move_amplitude;
-    paramElements[11].value = params.z_move_amplitude;
-    paramElements[12].value = params.angle_move_amplitude;
-
-    paramElements[13].checked = params.move_aim_on;
-    paramElements[14].checked = params.balance_enable;
-
-    paramElements[15].value = params.balance_hip_roll_gain;
-    paramElements[16].value = params.balance_knee_gain;
-    paramElements[17].value = params.balance_ankle_roll_gain;
-    paramElements[18].value = params.balance_ankle_pitch_gain;
-    paramElements[19].value = params.y_swap_amplitude;
-    paramElements[20].value = params.z_swap_amplitude;
-    paramElements[21].value = params.arm_swing_gain;
-    paramElements[22].value = params.pelvis_offset;
-    paramElements[23].value = params.hip_pitch_offset;
-    paramElements[24].value = params.p_gain;
-    paramElements[25].value = params.i_gain;
-    paramElements[26].value = params.d_gain;
+    console.log(params.init_x_offset);
+    document.getElementById("set_init_x_offset").value = params.init_x_offset;
+    document.getElementById("set_init_y_offset").value = params.init_y_offset;
+    document.getElementById("set_init_z_offset").value = params.init_z_offset;
+    document.getElementById("set_init_roll_offset").value = params.init_roll_offset;
+    document.getElementById("set_init_pitch_offset").value = params.init_pitch_offset;
+    document.getElementById("set_init_yaw_offset").value = params.init_yaw_offset;
+    document.getElementById("set_period_time").value = params.period_time;
+    document.getElementById("set_dsp_ratio").value = params.dsp_ratio;
+    document.getElementById("set_step_fb_ratio").value = params.step_fb_ratio;
+    document.getElementById("set_x_move_amplitude").value = params.x_move_amplitude;
+    document.getElementById("set_y_move_amplitude").value = params.y_move_amplitude;
+    document.getElementById("set_z_move_amplitude").value = params.z_move_amplitude;
+    document.getElementById("set_angle_move_amplitude").value = params.angle_move_amplitude;
+    document.getElementById("set_move_aim_on").checked = params.move_aim_on;
+    document.getElementById("set_balance_enable").checked = params.balance_enable;
+    document.getElementById("set_balance_hip_roll_gain").value = params.balance_hip_roll_gain;
+    document.getElementById("set_balance_knee_gain").value = params.balance_knee_gain;
+    document.getElementById("set_balance_ankle_roll_gain").value = params.balance_ankle_roll_gain;
+    document.getElementById("set_balance_ankle_pitch_gain").value = params.balance_ankle_pitch_gain;
+    document.getElementById("set_y_swap_amplitude").value = params.y_swap_amplitude;
+    document.getElementById("set_z_swap_amplitude").value = params.z_swap_amplitude;
+    document.getElementById("set_arm_swing_gain").value = params.arm_swing_gain;
+    document.getElementById("set_pelvis_offset").value = params.pelvis_offset;
+    document.getElementById("set_hip_pitch_offset").value = params.hip_pitch_offset;
+    document.getElementById("set_p_gain").value = params.p_gain;
+    document.getElementById("set_i_gain").value = params.i_gain;
+    document.getElementById("set_d_gain").value = params.d_gain;
 
     bt_get_walk_params.classList.remove("disabled");
     setEnabledSettings(true);
@@ -294,6 +293,11 @@ function handleDeviceConnected(params){
     alert.show(alert.TYPE_SUCCESS, "Connected to robot");
 }
 
+function handleStatusMsg(params){
+    console.log(params);
+    // alert.show(alert.TYPE_INFO, pa);
+}
+
 
 
 ws.onopen = function (e){
@@ -301,6 +305,7 @@ ws.onopen = function (e){
 };
 
 ws.onmessage = function (event){
+    console.log(event.data)
     var obj = JSON.parse(event.data);
     
     if(obj.cmd == null) return;
@@ -347,9 +352,7 @@ ws.onerror = function(err) {
 function onSubmit(id){
     var el = document.getElementById(id);
     if(el == null) return false;
-    var result = '{"cmd":"set_walk_params","param":["'+ id.substring(4, id.length) +'","'+ el.value +'"] }';
-    ws.send(result);
-    console.log(id + el.value);
+    sendParameterized("set_walk_params", '["'+ id.substring(4, id.length) +'",'+ el.value +']');
     return false;
 }
 
@@ -383,9 +386,7 @@ function onSubmitWalking(id){
 function onSubmitCB(id){
     var el = document.getElementById(id);
     if(el == null) return false;
-    var result = '{"cmd":"set_walk_params","param":["'+ id.substring(4, id.length) +'",'+ el.checked?'true':'false' +'] }';
-    ws.send(result);
-    console.log(id + el.value);
+    sendParameterized("set_walk_params", '["'+ id.substring(4, id.length) +'",'+ el.checked?'true':'false' +']');
     return false;
 }
 
@@ -465,6 +466,7 @@ function getAll(){
     sendCmd("get_walk_params");
 }
 
+// getAll();
 
 
 document.addEventListener("keydown", event => {
