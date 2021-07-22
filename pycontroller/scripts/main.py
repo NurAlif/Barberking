@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from _typeshed import Self
 import signal
 import sys
 
@@ -10,6 +9,7 @@ import json
 
 # websocket
 import threading
+# import asyncio
 from simple_websocket_server import WebSocketServer, WebSocket
 
 from std_msgs.msg import String
@@ -23,7 +23,7 @@ pubSWI = rospy.Publisher('/robotis/sync_write_item', SyncWriteItem, queue_size=1
 pubBT = rospy.Publisher('/robotis/open_cr/button', String, queue_size=10)
 pubEnaMod = rospy.Publisher('/robotis/enable_ctrl_module', String, queue_size=10)
 pubWalkCmd = rospy.Publisher('/robotis/walking/command', String, queue_size=10)
-pubSetParams = rospy.Publisher('/robotis/walking/set_params', String, queue_size=10)
+pubSetParams = rospy.Publisher('/robotis/walking/set_params', WalkingParam, queue_size=10)
 
 currentWalkParams = None # ? params
 walkParams = None
@@ -196,23 +196,16 @@ joints = [
 ]
 
 def enableWalk():
-    global walking_module_enabled
-    if walking_module_enabled == False:
-        walking_module_enabled = True
-        pubEnaMod.publish("walking_module")
+    pubEnaMod.publish("walking_module")
 
-def setDxlTorque(isTorqueOn):
+def setDxlTorque():
     global robotIsOn
 
-    if (robotIsOn == False and isTorqueOn == 0):
-        return
-    else:
-        robotIsOn = False
+    isTorqueOn = False
 
-    if (robotIsOn == True and isTorqueOn == 1):
+    if robotIsOn == False:
         return
-    else:
-        robotIsOn = True
+    robotIsOn = False
 
     syncwrite_msg = SyncWriteItem()
     syncwrite_msg.item_name = "torque_enable"
@@ -223,6 +216,10 @@ def setDxlTorque(isTorqueOn):
     pubSWI.publish(syncwrite_msg)
 
 def startRobot():
+    global robotIsOn
+    if robotIsOn:
+        return
+    robotIsOn = True
     pubBT.publish("user_long")
 
 def setWalkCmd(walkCmd):
@@ -234,34 +231,36 @@ def setWalkParams(param):
 
     paramName = param[0]
     paramValue = param[1]
+    print(param)
+    print(paramName)
 
-    if paramName == "init_x_offset" : walkParams.init_x_offset = paramValue
-    elif paramName == "init_y_offset" : walkParams.init_y_offset = paramValue
-    elif paramName == "init_z_offset" : walkParams.init_z_offset = paramValue
-    elif paramName == "init_roll_offset" : walkParams.init_roll_offset = paramValue
-    elif paramName == "init_pitch_offset" : walkParams.init_pitch_offset = paramValue
-    elif paramName == "init_yaw_offset" : walkParams.init_yaw_offset = paramValue
-    elif paramName == "period_time" : walkParams.period_time = paramValue
-    elif paramName == "dsp_ratio" : walkParams.dsp_ratio = paramValue
-    elif paramName == "step_fb_ratio" : walkParams.step_fb_ratio = paramValue
-    elif paramName == "x_move_amplitude" : walkParams.x_move_amplitude = paramValue
-    elif paramName == "y_move_amplitude" : walkParams.y_move_amplitude = paramValue
-    elif paramName == "z_move_amplitude" : walkParams.z_move_amplitude = paramValue
-    elif paramName == "angle_move_amplitude" : walkParams.angle_move_amplitude = paramValue
-    elif paramName == "move_aim_on" : walkParams.move_aim_on = paramValue
-    elif paramName == "balance_enable" : walkParams.balance_enable = paramValue
-    elif paramName == "balance_hip_roll_gain" : walkParams.balance_hip_roll_gain = paramValue
-    elif paramName == "balance_knee_gain" : walkParams.balance_knee_gain = paramValue
-    elif paramName == "balance_ankle_roll_gain" : walkParams.balance_ankle_roll_gain = paramValue
-    elif paramName == "balance_ankle_pitch_gain" : walkParams.balance_ankle_pitch_gain = paramValue
-    elif paramName == "y_swap_amplitude" : walkParams.y_swap_amplitude = paramValue
-    elif paramName == "z_swap_amplitude" : walkParams.z_swap_amplitude = paramValue
-    elif paramName == "arm_swing_gain" : walkParams.arm_swing_gain = paramValue
-    elif paramName == "pelvis_offset" : walkParams.pelvis_offset = paramValue
-    elif paramName == "hip_pitch_offset" : walkParams.hip_pitch_offset = paramValue
-    elif paramName == "p_gain" : walkParams.p_gain = paramValue
-    elif paramName == "i_gain" : walkParams.i_gain = paramValue
-    elif paramName == "d_gain" : walkParams.d_gain = paramValue
+    if paramName == u"init_x_offset" : walkParams.init_x_offset = paramValue
+    elif paramName == u"init_y_offset" : walkParams.init_y_offset = paramValue
+    elif paramName == u"init_z_offset" : walkParams.init_z_offset = paramValue
+    elif paramName == u"init_roll_offset" : walkParams.init_roll_offset = paramValue
+    elif paramName == u"init_pitch_offset" : walkParams.init_pitch_offset = paramValue
+    elif paramName == u"init_yaw_offset" : walkParams.init_yaw_offset = paramValue
+    elif paramName == u"period_time" : walkParams.period_time = paramValue
+    elif paramName == u"dsp_ratio" : walkParams.dsp_ratio = paramValue
+    elif paramName == u"step_fb_ratio" : walkParams.step_fb_ratio = paramValue
+    elif paramName == u"x_move_amplitude" : walkParams.x_move_amplitude = paramValue
+    elif paramName == u"y_move_amplitude" : walkParams.y_move_amplitude = paramValue
+    elif paramName == u"z_move_amplitude" : walkParams.z_move_amplitude = paramValue
+    elif paramName == u"angle_move_amplitude" : walkParams.angle_move_amplitude = paramValue
+    elif paramName == u"move_aim_on" : walkParams.move_aim_on = paramValue
+    elif paramName == u"balance_enable" : walkParams.balance_enable = paramValue
+    elif paramName == u"balance_hip_roll_gain" : walkParams.balance_hip_roll_gain = paramValue
+    elif paramName == u"balance_knee_gain" : walkParams.balance_knee_gain = paramValue
+    elif paramName == u"balance_ankle_roll_gain" : walkParams.balance_ankle_roll_gain = paramValue
+    elif paramName == u"balance_ankle_pitch_gain" : walkParams.balance_ankle_pitch_gain = paramValue
+    elif paramName == u"y_swap_amplitude" : walkParams.y_swap_amplitude = paramValue
+    elif paramName == u"z_swap_amplitude" : walkParams.z_swap_amplitude = paramValue
+    elif paramName == u"arm_swing_gain" : walkParams.arm_swing_gain = paramValue
+    elif paramName == u"pelvis_offset" : walkParams.pelvis_offset = paramValue
+    elif paramName == u"hip_pitch_offset" : walkParams.hip_pitch_offset = paramValue
+    elif paramName == u"p_gain" : walkParams.p_gain = paramValue
+    elif paramName == u"i_gain" : walkParams.i_gain = paramValue
+    elif paramName == u"d_gain" : walkParams.d_gain = paramValue
 
     pubSetParams.publish(walkParams)
 
@@ -317,11 +316,11 @@ def send_message(id, cmd, params):
         "params" : params
     }
     respJson = json.dumps(resp)
-    if(id < 0):
-        clients[id].send_message(respJson)
+    if(id >= 0):
+        clients[id].send_message(unicode(respJson, "utf-8"))
     else:
         for client in clients.values():
-            client.send_message(respJson)
+            client.send_message(unicode(respJson, "utf-8"))
 
 def init_gyro():
     init_gyro_msg = SyncWriteItem()
@@ -336,7 +335,15 @@ def handleImu(imu_msg_):
     global imu
     imu = imu_msg_
 
+def onFinishInitPose():
+    enableWalk()
+
 def handleStatusMsg(statusMsg):
+
+    if(statusMsg.status_msg == "Finish Init Pose"):
+        enableWalk()
+        send_message(-1, "torque_control", True)
+
     statusDict = {
         'type':statusMsg.type,
         'module_name':statusMsg.module_name,
@@ -346,29 +353,26 @@ def handleStatusMsg(statusMsg):
 
 class WS(WebSocket):
     def handle(self):
-        print(self.address, 'receive data: ', self.data)
-
         data = json.loads(self.data)
 
         cmd = data['cmd']
 
         if cmd == 'torque_on':
             startRobot()
-            send_message(-1, "torque_control", True)
         elif cmd == 'torque_off':
-            setDxlTorque(0)
+            setDxlTorque()
             send_message(-1, "torque_control", False)
         elif cmd == 'start_walk':
             setWalkCmd("start")
             send_message(-1, "walk_control", True)
         elif cmd == 'stop_walk':
             setWalkCmd("stop")
+            send_message(-1, "walk_control", False)
         elif cmd == 'save_walk_params':
             setWalkCmd("save")
             send_message(-1, "walk_params_saved", True)
         elif cmd == 'get_walk_params':
-            if currentWalkParams == None: getWalkParams()
-            send_message(-1, "update_walk_params", currentWalkParams)
+            send_message(-1, "update_walk_params", getWalkParams())
         elif cmd == 'set_walk_params':
             setWalkParams(data['params'])
             send_message(-1, "controller_msg", 'Walk params changed')
@@ -400,11 +404,12 @@ class WS(WebSocket):
 
     def connected(self):
         print(self.address, 'connected')
-        clients[self.address[1]] = self
+        clients.update({self.address[1]: self})
         send_message(self.address[1], "device_connected", self.address)
+        send_message(self.address[1], "torque_control", robotIsOn)
 
     def handle_close(self):
-        clients.pop(self.address.pop)
+        clients.pop(self.address)
         print(self.address, 'closed')
         send_message(-1, "device_disconnected", self.address)
 
