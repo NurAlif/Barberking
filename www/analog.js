@@ -1,3 +1,11 @@
+class Vector2 {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+    }
+}
+
+
 var analog_container = document.getElementById('analog_container');
 var h_bar = document.getElementById('h_bar');
 var v_bar = document.getElementById('v_bar');
