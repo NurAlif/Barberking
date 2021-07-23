@@ -102,8 +102,8 @@ class Walking:
         self.max_speed = 40
         self.stationary_offset = Vector2yaw()
         self.feed_rate = 10
-        self.step = Vector2yaw(1,1,1)
-        self.vectorMultiplier = Vector2yaw(1,1,1)
+        self.step = Vector2yaw(0.001,0.001,0.001)
+        self.vectorMultiplier = Vector2yaw(0.01, 0.01, 0.01)
         self.vectorCurrent = Vector2yaw()
         self.vectorTarget = Vector2yaw() # normalized
 
@@ -150,6 +150,11 @@ class Walking:
             elif(confValue[0] == "yaw"):
                 self.step.yaw = confValue[1]
         elif confName == 'turn_mode': self.turn_mode = confValue
+        elif confName == 'offset':
+            if confValue[0] == "x": self.stationary_offset.x = confValue[1]
+            elif confValue[0] == "y": self.stationary_offset.y = confValue[1]
+            elif confValue[0] == "yaw": self.stationary_offset.yaw = confValue[1]
+
     def getWalkingConf(self):
         offset = self.stationary_offset
         multiplier = self.vectorMultiplier
