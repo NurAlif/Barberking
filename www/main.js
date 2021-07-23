@@ -1,6 +1,8 @@
 ws = new WebSocket("ws://"+ "192.168.43.187" +":8077");
             
 var con_h1 = document.getElementById("con_h1");
+var con_log = document.getElementById("log_container");
+var voltage_badge = document.getElementById("voltage_badge");
 var bt_torque_toggle = document.querySelector("#bt_torque_toggle");
 var bt_walk_toggle = document.querySelector("#bt_walk_toggle");
 var bt_get_walk_params = document.querySelector("#bt_get_walk_params");
@@ -294,8 +296,26 @@ function handleDeviceConnected(params){
 }
 
 function handleStatusMsg(params){
-    console.log(params);
-    // alert.show(alert.TYPE_INFO, pa);
+    let color = "text-warning";
+
+    let type = params.type;
+    let msg = params.status_msg;
+
+    if(type === alert.TYPE_DANGER){
+        color = "text-danger";
+    }else if(type === alert.TYPE_INFO){
+        color = "text-info";
+    }else if(type === alert.TYPE_SUCCESS){
+        color = "text-success";
+    }
+
+    let searchVolt = msg.search("Volt : ");
+    if(searchVolt >= 0){
+        voltage_badge.innerHTML = msg.substring(searchVolt+1, msg.length);
+    }
+
+    con_log.innerHTML += '<p class="log '+color+'">['+type+']['+params.module_name+'] '+msg+'<p>';
+    con_log.scrollTop = con_log.scrollHeight;
 }
 
 
@@ -321,7 +341,7 @@ ws.onmessage = function (event){
         updateWalkingConf(obj.params);
     }
     if(cmd == "update_status"){
-        updateWalkParams(obj.params);
+        handleStatusMsg(obj.params);
     }
     if(cmd == "controller_msg"){
         alert.show(alert.TYPE_INFO, obj.params);
@@ -377,6 +397,20 @@ function onSubmitWalking(id){
     else if(id === "set_walking_turnspeed"){
         axis = "yaw";
         param = "step";
+    }
+
+
+    else if(id === "set_walking_offset_x"){
+        axis = "x";
+        param = "offset";
+    }
+    else if(id ==="set_walking_offset_y"){
+        axis = "y";
+        param = "offset";
+    }
+    else if(id === "set_walking_offset_yaw"){
+        axis = "yaw";
+        param = "offset";
     }
     sendParameterized("set_walking_conf", JSON.stringify([param, [axis, el.value]]));
     console.log(id + el.value);
