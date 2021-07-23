@@ -39,18 +39,14 @@ class Vector2:
         self.y = y
 
 class Vector2yaw:
-    def __init__(self, x, y, yaw):
+    def __init__(self, x=0, y=0, yaw=0):
         self.x = x
         self.y = y
         self.yaw = yaw
     
     @staticmethod
     def multiply(a, b):
-        temp = Vector2yaw(0,0,0)
-        temp.x = a.x * b.x
-        temp.y = a.y * b.y
-        temp.yaw = a.yaw * b.yaw
-        return temp
+        return Vector2yaw(a.x * b.x, a.y * b.y, a.yaw * b.yaw)
 
     @staticmethod
     def add(a, b):
@@ -66,26 +62,32 @@ class Vector2yaw:
         self.yaw = target.yaw
 
     def stepToTarget(self, target, step):
-        if(self.x < target.x): 
-            self.x += step.x
-            if self.x > target.x: self.x = target.x
-        elif(self.x > target.x): 
-            self.x -= step.x
-            if self.x < target.x: self.x = target.x
+        selfx = self.x
+        selfy = self.y
+        selfyaw = self.yaw
+        targetx = target.x
+        targety = target.y
+        targetyaw = target.yaw
+        if(selfx < targetx): 
+            selfx += step.x
+            if selfx > targetx: selfx = targetx
+        elif(selfx > targetx): 
+            selfx -= step.x
+            if selfx < targetx: selfx = targetx
 
-        if(self.y < target.y): 
-            self.y += step.y
-            if self.y > target.y: self.y = target.y
-        elif(self.y > target.y): 
-            self.y -= step.y
-            if self.y < target.y: self.y = target.y
+        if(selfy < targety): 
+            selfy += step.y
+            if selfy > targety: selfy = targety
+        elif(selfy > targety): 
+            selfy -= step.y
+            if selfy < targety: selfy = targety
 
-        if(self.yaw < target.yaw): 
-            self.yaw += step.yaw
-            if self.yaw > target.yaw: self.yaw = target.yaw
-        elif(self.yaw > target.yaw): 
-            self.yaw -= step.yaw
-            if self.yaw < target.yaw: self.yaw = target.yaw
+        if(selfyaw < targetyaw): 
+            selfyaw += step.yaw
+            if selfyaw > targetyaw: selfyaw = targetyaw
+        elif(selfyaw > targetyaw): 
+            selfyaw -= step.yaw
+            if selfyaw < targetyaw: selfyaw = targetyaw
 
 
 CONTROL_MODE_HEADLESS = 0
@@ -98,15 +100,15 @@ class Walking:
         self.control = None # held controller socket id
         self.turn_mode = CONTROL_MODE_YAWMODE
         self.max_speed = 40
-        self.stationary_offset = Vector2yaw(0.0,0.0,0.0)
+        self.stationary_offset = Vector2yaw()
         self.feed_rate = 10
         self.step = Vector2yaw(1,1,1)
         self.vectorMultiplier = Vector2yaw(1,1,1)
-        self.vectorCurrent = Vector2yaw(0,0,0)
-        self.vectorTarget = Vector2yaw(0,0,0) # normalized
+        self.vectorCurrent = Vector2yaw()
+        self.vectorTarget = Vector2yaw() # normalized
 
     def setTarget(self, newTarget): # normalized input
-        self.vectorTarget = Vector2yaw.add(Vector2yaw.multiply(newTarget * self.vectorMultiplier),self.stationary_offset)
+        self.vectorTarget = Vector2yaw.add(Vector2yaw.multiply(newTarget, self.vectorMultiplier), self.stationary_offset)
 
     def stepToTargetVel(self):
         self.vectorCurrent.stepToTarget(self.target, self.step)
@@ -127,28 +129,27 @@ class Walking:
         self.stationary_offset.set(self.vectorCurrent)
 
     def setWalkingConf(self, confDict):
-        if confDict[0] == 'max_speed': self.max_speed = confDict[1]
-        elif confDict[0] == 'stationary_offset':
-            confOffset = confDict[1]
-            self.stationary_offset.x = confOffset[0]
-            self.stationary_offset.y = confOffset[1]
-            self.stationary_offset.yaw = confOffset[2]
-        elif confDict[0] == 'feed_rate': self.feed_rate = confDict[1]
-        elif confDict[0] == 'step':
-            confStep = confDict[1]
-            if(confStep[0] == "xy"):
-                self.step.x = confStep[1]
-                self.step.y = confStep[1]
-            elif(confStep[0] == "yaw"):
-                self.step.yaw = confStep[1]
-        elif confDict[0] == 'multipler':
-            confStep = confDict[1]
-            if(confStep[0] == "xy"):
-                self.step.x = confStep[1]
-                self.step.y = confStep[1]
-            elif(confStep[0] == "yaw"):
-                self.step.yaw = confStep[1]
-        elif confDict[0] == 'turn_mode': self.turn_mode = confDict[1]
+        confName = confDict[0]
+        confValue = confDict[1]
+        if confName == 'max_speed': self.max_speed = confValue
+        elif confName == 'stationary_offset':
+            self.stationary_offset.x = confValue[0]
+            self.stationary_offset.y = confValue[1]
+            self.stationary_offset.yaw = confValue[2]
+        elif confName == 'feed_rate': self.feed_rate = confValue
+        elif confName == 'step':
+            if(confValue[0] == "xy"):
+                self.step.x = confValue[1]
+                self.step.y = confValue[1]
+            elif(confValue[0] == "yaw"):
+                self.step.yaw = confValue[1]
+        elif confName == 'multipler':
+            if(confValue[0] == "xy"):
+                self.step.x = confValue[1]
+                self.step.y = confValue[1]
+            elif(confValue[0] == "yaw"):
+                self.step.yaw = confValue[1]
+        elif confName == 'turn_mode': self.turn_mode = confValue
     def getWalkingConf(self):
         offset = self.stationary_offset
         multiplier = self.vectorMultiplier
@@ -198,7 +199,7 @@ joints = [
 def enableWalk():
     pubEnaMod.publish("walking_module")
 
-def setDxlTorque():
+def setDxlTorque(): # list comprehension
     global robotIsOn
 
     isTorqueOn = False
@@ -404,9 +405,10 @@ class WS(WebSocket):
 
     def connected(self):
         print(self.address, 'connected')
-        clients.update({self.address[1]: self})
-        send_message(self.address[1], "device_connected", self.address)
-        send_message(self.address[1], "torque_control", robotIsOn)
+        clientID = self.address[1]
+        clients.update({clientID: self})
+        send_message(clientID, "device_connected", self.address)
+        send_message(clientID, "torque_control", robotIsOn)
 
     def handle_close(self):
         clients.pop(self.address)

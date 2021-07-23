@@ -60,7 +60,7 @@ var modal = {
     }
 }
 
-modal.showConfirm("anu","woa","handleTorqueToggleUpdate(1)");
+// modal.showConfirm("anu","woa","handleTorqueToggleUpdate(1)");
 
 var alert = {
     TYPE_WARN : 1,
