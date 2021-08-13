@@ -113,7 +113,7 @@ var alert = {
 var Dropdown = function(keys, names, parent, callback){
     this.items = keys.map((id) => {
         let element = document.querySelector('#'+id);
-        element.setAttribute("onclick", callback+'("'+id+'")');
+        element.setAttribute("onclick", callback+"('"+id+"')");
         return element;
     });
     this.parent = document.querySelector('#'+parent);
@@ -425,7 +425,15 @@ function onSubmitCB(id){
 }
 
 function sendWalking(){
-    sendParameterized('set_walking', {x:analogValue.x, y:analogValue.y, yaw:analogValue.x});
+    let obj = {
+        x_move_amplitude: analogValue.x,
+        y_move_amplitude: analogValue.y,
+        angle_move_amplitude: analogValue.y
+    };
+    
+    console.log(JSON.stringify(obj));
+
+    sendParameterized('set_walking', JSON.stringify(obj));
 }
 
 var dropdownControlMode = new Dropdown([
@@ -629,3 +637,9 @@ timerResponsiveCmd = setInterval(function (){
         }
     }
 }, 1000);
+
+var realTimeControl = setInterval(function (){
+    if(hasControlID == selfID[1] && selfID[1] != -1){
+        sendWalking();
+    }
+}, 100);
