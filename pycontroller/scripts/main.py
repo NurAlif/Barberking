@@ -30,7 +30,7 @@ walkParams = None
 
 server = None
 
-robotIsOn = True
+robotIsOn = False
 walking_module_enabled = False
 
 class Vector2:
@@ -122,7 +122,7 @@ class Walking:
         walkParams.y_move_amplitude = self.vectorCurrent.y
         walkParams.angle_move_amplitude = self.vectorCurrent.yaw
         
-        pubSetParams.publish(walkParams)
+        # pubSetParams.publish(walkParams)
         send_message(-1, "update_walking", self.getWalkingCurrent())
     
     def setWalkingOffset(self):
@@ -359,8 +359,9 @@ def handleStatusMsg(statusMsg):
 
 class WS(WebSocket):
     def handle(self):
+        print(self.data)
         data = json.loads(self.data)
-
+        print(data)
         cmd = data['cmd']
 
         if cmd == 'torque_on':
@@ -394,6 +395,7 @@ class WS(WebSocket):
             walking.setWalkingConf(data['params'])
             send_message(-1, "controller_msg", 'Walking configuration changed')
         elif cmd == 'set_control_walking':
+            print("set_control_walking")
             if data['params'] == 1:
                 walking.control = self.address[1]
                 send_message(-1, "control_override", self.address)
@@ -437,9 +439,15 @@ def main():
 
     #rospy.Subscriber("/robotis/open_cr/imu", Imu, handleImu)
     rospy.Subscriber("/robotis/status", StatusMsg, handleStatusMsg)
-    enableWalk()
+
+
     print("program runnning")
     rate = rospy.Rate(walking.feed_rate) # 10hz
+
+    time.sleep(3)
+    getWalkParams()
+    startRobot()
+    
     while not rospy.is_shutdown():
         walking.sendWithWalkParams()
         rate.sleep()
