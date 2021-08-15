@@ -236,25 +236,25 @@ function updateWalkParams(params){
 }
 
 function updateWalkingConf(params) {
-    let obj = JSON.parse(params);
+    let obj = params
 
     hasControlID = obj.control; 
     dropdownTurnMode.setActive(obj.turn_mode === 1?TURN_MODE_YAW:TURN_MODE_HEADLESS);
     //obj.stationary_offset;
 
-    input_walking_turnspeed = obj.step[2];
-    input_walking_Accel = obj.step[0];
-    input_walking_multipler = obj.multiplier[0];
-    input_walking_turnrate = obj.multiplier[2];
+    input_walking_turnspeed.value = obj.step[2];
+    input_walking_Accel.value = obj.step[0];
+    input_walking_multipler.value = obj.multiplier[0];
+    input_walking_turnrate.value = obj.multiplier[2];
     setEnabledWalkingConf(true);
 }
 
 function updateWalking(params){
-    x = params[0];
+    var x = params[0] / parseFloat(input_walking_multipler.value)/2;
     if(controlTurnMode === TURN_MODE_YAW){
-        x = params[2];
+        x = params[2] / parseFloat(input_walking_turnrate.value)/2;
     }
-    setAnalogFeedback(x, params[1]);
+    setAnalogFeedback(x, params[1] / parseFloat(input_walking_multipler.value)/2);
 }
 
 function handleTorqueToggleUpdate(params){
@@ -322,6 +322,7 @@ function handleStatusMsg(params){
 
 ws.onopen = function (e){
     con_h1.innerHTML = "CONNECTED";
+    getAll();
 };
 
 ws.onmessage = function (event){
@@ -420,15 +421,15 @@ function onSubmitWalking(id){
 function onSubmitCB(id){
     var el = document.getElementById(id);
     if(el == null) return false;
-    sendParameterized("set_walk_params", '["'+ id.substring(4, id.length) +'",'+ el.checked?'true':'false' +']');
+    sendParameterized("set_walk_params", '["'+ id.substring(4, id.length) +'",'+ (el.checked?'true':'false') +']');
     return false;
 }
 
 function sendWalking(){
     let obj = {
-        x_move_amplitude: analogValue.x,
-        y_move_amplitude: analogValue.y,
-        angle_move_amplitude: analogValue.y
+        x: analogValue.x,
+        y: analogValue.y,
+        yaw: analogValue.y
     };
     
     console.log(JSON.stringify(obj));
@@ -508,8 +509,6 @@ function getAll(){
     sendCmd("get_walk_params");
 }
 
-// getAll();
-
 
 document.addEventListener("keydown", event => {
     if (event.isComposing || event.keyCode === 32) {
@@ -531,8 +530,27 @@ function sendCmd(cmd){
 
 function sendParameterized(cmd, param){
     var data = '{"cmd":"'+ cmd +'","params":'+param+'}';
+    console.log(data);
     ws.send(data);
 }
+
+// function sendCmd(_cmd){
+//     let dataObj = {
+//         cmd: _cmd
+//     }
+//     var data = JSON.stringify(dataObj);
+//     ws.send(data);
+// }
+
+// function sendParameterized(_cmd, param){
+//     let dataObj = {
+//         cmd: _cmd,
+//         params: param
+//     }
+
+//     var data = JSON.stringify(dataObj);
+//     ws.send(data);
+// }
 
 bt_torque_toggle.addEventListener("click", function(event) {
     event.preventDefault();
