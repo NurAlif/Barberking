@@ -30,7 +30,7 @@ walkParams = None
 
 server = None
 
-robotIsOn = False
+robotIsOn = True
 walking_module_enabled = False
 
 class Vector2:
@@ -39,7 +39,7 @@ class Vector2:
         self.y = y
 
 class Vector2yaw:
-    def __init__(self, x=0, y=0, yaw=0):
+    def __init__(self, x=0.0, y=0.000, yaw=0.000):
         self.x = x
         self.y = y
         self.yaw = yaw
@@ -103,7 +103,7 @@ class Walking:
         self.stationary_offset = Vector2yaw()
         self.feed_rate = 10
         self.step = Vector2yaw(0.001,0.001,0.001)
-        self.vectorMultiplier = Vector2yaw(0.01, 0.01, 0.01)
+        self.vectorMultiplier = Vector2yaw(0.02, 0.02, 0.02)
         self.vectorCurrent = Vector2yaw()
         self.vectorTarget = Vector2yaw() # normalized
 
@@ -111,7 +111,8 @@ class Walking:
         self.vectorTarget = Vector2yaw.add(Vector2yaw.multiply(newTarget, self.vectorMultiplier), self.stationary_offset)
 
     def stepToTargetVel(self):
-        self.vectorCurrent.stepToTarget(self.target, self.step)
+        # self.vectorCurrent.stepToTarget(self.vectorTarget, self.step)
+        self.vectorCurrent.set(self.vectorTarget)
 
     def sendWithWalkParams(self):
         if(self.control == None): return
@@ -168,6 +169,8 @@ class Walking:
             'step':[step.x, step.y, step.yaw],
             'multiplier': [multiplier.x, multiplier.y, multiplier.yaw]
         }
+        if(self.control == None):
+            confDict['control'] = -1
         return confDict
     def getWalkingCurrent(self):
         current = self.vectorCurrent
@@ -183,7 +186,7 @@ joints = [
     "head_tilt",
     "l_ank_pitch",
     "l_ank_roll",
-    "l_el",
+    # "l_el",
     "l_hip_pitch",
     "l_hip_roll",
     "l_hip_yaw",
@@ -192,7 +195,7 @@ joints = [
     "l_sho_roll",
     "r_ank_pitch",
     "r_ank_roll",
-    "r_el",
+    # "r_el",
     "r_hip_pitch",
     "r_hip_roll",
     "r_hip_yaw",
@@ -218,6 +221,14 @@ def setDxlTorque(): # list comprehension
     for joint_name in joints:
         syncwrite_msg.joint_name.append(joint_name)
         syncwrite_msg.value.append(isTorqueOn) 
+
+    pubSWI.publish(syncwrite_msg)
+
+def initGyro():
+    syncwrite_msg = SyncWriteItem()
+    syncwrite_msg.item_name = "imu_control"
+    syncwrite_msg.joint_name.append("open-cr")
+    syncwrite_msg.value.append(8)
 
     pubSWI.publish(syncwrite_msg)
 
@@ -345,6 +356,10 @@ def onFinishInitPose():
     enableWalk()
 
 def handleStatusMsg(statusMsg):
+    print(statusMsg.status_msg)
+    if(statusMsg.status_msg == "Walking Enabled"):
+        init_gyro()
+        print("init gyro...")
 
     if(statusMsg.status_msg == "Finish Init Pose"):
         enableWalk()
@@ -359,9 +374,7 @@ def handleStatusMsg(statusMsg):
 
 class WS(WebSocket):
     def handle(self):
-        print(self.data)
         data = json.loads(self.data)
-        print(data)
         cmd = data['cmd']
 
         if cmd == 'torque_on':
@@ -383,7 +396,7 @@ class WS(WebSocket):
         elif cmd == 'set_walk_params':
             setWalkParams(data['params'])
             send_message(-1, "controller_msg", 'Walk params changed')
-        elif cmd == 'set_walking':
+        elif cmd == "set_walking":
             if(self.address[1] == walking.control):
                 vectorDict = data['params']
                 vector = Vector2yaw(vectorDict["x"], vectorDict["y"], vectorDict["yaw"])
@@ -394,8 +407,7 @@ class WS(WebSocket):
         elif cmd == 'set_walking_conf':
             walking.setWalkingConf(data['params'])
             send_message(-1, "controller_msg", 'Walking configuration changed')
-        elif cmd == 'set_control_walking':
-            print("set_control_walking")
+        elif cmd == "set_control_walking":
             if data['params'] == 1:
                 walking.control = self.address[1]
                 send_message(-1, "control_override", self.address)
@@ -444,11 +456,12 @@ def main():
     print("program runnning")
     rate = rospy.Rate(walking.feed_rate) # 10hz
 
-    time.sleep(3)
+    time.sleep(20)
     getWalkParams()
-    startRobot()
+    # startRobot()
     
     while not rospy.is_shutdown():
+        walking.stepToTargetVel()
         walking.sendWithWalkParams()
         rate.sleep()
 
