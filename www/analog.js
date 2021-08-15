@@ -5,6 +5,9 @@ class Vector2 {
     }
 }
 
+function clamp(val, max, min){
+    return Math.max(Math.min(val, max), min);
+}
 
 var analog_container = document.getElementById('analog_container');
 var h_bar = document.getElementById('h_bar');
@@ -135,6 +138,7 @@ function setAnalogPointer(x,y) {
 }
 
 function setAnalogFeedback(x,y) {
+    console.log(x+" "+y);
     setAnalogIndicator(true, pointer_v_bar, y);
     setAnalogIndicator(false, pointer_h_bar, x);
 }
