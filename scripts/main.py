@@ -12,9 +12,7 @@ import json
 import threading
 import inference
 
-import walking as walk
-
-from walking import Vector2, Vector2yaw, CONTROL_MODE_HEADLESS, CONTROL_MODE_YAWMODE
+from walking import Vector2, Vector2yaw, CONTROL_MODE_HEADLESS, CONTROL_MODE_YAWMODE, Walking
 from walk_utils import joints, getWalkParamsDict, setWalkParams
 
 
@@ -25,7 +23,7 @@ from std_msgs.msg import String
 from robotis_controller_msgs.msg import SyncWriteItem
 from robotis_controller_msgs.msg import StatusMsg
 from op3_walking_module_msgs.msg import WalkingParam
-from sensor_msgs.msg import Imu
+from sensor_msgs.msg import Imu, JointState
 from op3_walking_module_msgs.srv import GetWalkingParam
 
     
@@ -45,12 +43,12 @@ server = None
 robotIsOn = True
 walking_module_enabled = False
 
-walking = walk.Walking()
+walking = Walking()
 track_ball = inference.Tracking()
 
 clients = {}
 
-SEND_PARAM_INTERVAL = 100
+SEND_PARAM_INTERVAL = 0.03
 lastSendParamTic = time.time()
 
 class WS(WebSocket):
@@ -250,7 +248,8 @@ def handleStatusMsg(statusMsg):
     send_message(-1, 'update_status', statusDict)
 
 def main():
-    global tic
+    global lastSendParamTic
+    global track_ball
     t1.start()
     rospy.init_node('main', anonymous=True)
 
@@ -260,17 +259,21 @@ def main():
 
     print("program runnning")
 
-    time.sleep(20)
+    time.sleep(2)
     getWalkParams()
     # startRobot()
 
+    inference.startInference()
+
     while not rospy.is_shutdown():
         toc = time.time()
-        if(toc - lastSendParamTic > SEND_PARAM_INTERVAL):
+        delta_t = toc - lastSendParamTic
+        print(delta_t)
+        if(delta_t > SEND_PARAM_INTERVAL):
             lastSendParamTic = toc
 
             walking.stepToTargetVel()
-            walking.sendWithWalkParams()
+            sendWithWalkParams()
 
         inference.detect(track_ball)
 
@@ -283,7 +286,7 @@ def shutdown():
     sys.exit()
 
 def close_sig_handler(signal, frame):
-    shutdown
+    shutdown()
 
 signal.signal(signal.SIGINT, close_sig_handler)
 

@@ -10,7 +10,7 @@ import pycuda.autoinit
 import math
 
 from utils.yolo_classes import get_cls_dict
-from utils.camera import add_camera_args, Camera
+from utils.camera import add_camera_args, Camera, camera_args
 from utils.display import show_fps
 from utils.visualization import BBoxVisualization
 from utils.mjpeg import MjpegServer
@@ -33,10 +33,10 @@ lost_count = 0
 
 # YOLO PARAMS
 
-category_num = 3
-model = "yolov3-last"
+category_num = 80
+model = "yolov3-tiny_last"
 letter_box = False
-mjpeg_port = 8077
+mjpeg_port = 8090
 
 cam = None
 trt_yolo = None
@@ -74,7 +74,7 @@ def parse_args():
     return args
 
 
-def loop_and_detect(track_ball):
+def detect(track_ball):
 
     global tic
     global lost_count
@@ -118,8 +118,6 @@ def loop_and_detect(track_ball):
                 found = True
 
     if found:
-        print(" ")
-        print("confidence : ", closest_c)
         track_ball = closest
         lost_count = 0
     else:
@@ -139,6 +137,7 @@ def loop_and_detect(track_ball):
             track_ball.x = 0.0
             track_ball.y = 0.0
 
+
 def startInference():
 
     global cam
@@ -148,10 +147,11 @@ def startInference():
 
     if category_num <= 0:
         raise SystemExit('ERROR: bad category_num (%d)!' % category_num)
-    if not os.path.isfile('yolo/%s.trt' % model):
+    if not os.path.isfile('/home/nvidia/project/tensorrt_demos/yolo/%s.trt' % model):
         raise SystemExit('ERROR: file (yolo/%s.trt) not found!' % model)
 
-    cam_args = Camera.camera_args()
+    cam_args = camera_args()
+    print(cam_args.width)
     cam = Camera(cam_args)
     if not cam.isOpened():
         raise SystemExit('ERROR: failed to open camera!')
@@ -163,6 +163,13 @@ def startInference():
     mjpeg_server = MjpegServer(port=mjpeg_port)
     print('MJPEG server started...')
 
+def inferenceLoop(track_ball):
+    while(True):
+        detect(track_ball)
+
+
 def shutdown():
+    global mjpeg_server
+    global cam
     mjpeg_server.shutdown()
     cam.release()

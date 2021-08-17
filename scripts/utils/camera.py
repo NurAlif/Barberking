@@ -21,20 +21,20 @@ import cv2
 # on cv2's built-in function to capture images from the webcam.
 USB_GSTREAMER = True
 
-def camera_args(parser):
+class camera_args:
     def __init__(self):
-        image = None
-        video = None
-        video_looping = False
-        rtsp = None
-        rtsp_latency = 200
-        usb = 0
-        gstr = None
-        onboard = None
-        copy_frame = False
-        do_resize = False
-        width = 640
-        height = 480
+        self.image = None
+        self.video = None
+        self.video_looping = False
+        self.rtsp = None
+        self.rtsp_latency = 200
+        self.usb = 0
+        self.gstr = None
+        self.onboard = None
+        self.copy_frame = False
+        self.do_resize = False
+        self.width = 640
+        self.height = 480
 
 def add_camera_args(parser):
     """Add parser augument for camera options."""
