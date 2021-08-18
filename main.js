@@ -8,6 +8,7 @@ var bt_walk_toggle = document.querySelector("#bt_walk_toggle");
 var bt_get_walk_params = document.querySelector("#bt_get_walk_params");
 var bt_show_settings = document.querySelector("#bt_show_settings");
 var bt_show_manuctrl = document.querySelector("#bt_show_manuctrl");
+var bt_show_headctrl = document.querySelector("#bt_show_headctrl");
 var bt_send_stationary = document.querySelector("#bt_send_stationary");
 var bt_submit_settings = document.querySelector("#bt_submit_settings");
 $("#"+bt_send_stationary.id).collapse("hide");
@@ -377,6 +378,18 @@ function onSubmit(id){
     return false;
 }
 
+function onSubmitHead(id){
+    var el = document.getElementById(id);
+    param = {
+        "yaw" : document.getElementById("head_yaw"),
+        "pitch" : document.getElementById("head_pitch")
+    }
+
+    sendParameterized("head_direct", JSON.stringify(param));
+    console.log(id + el.value);
+    return false;
+}
+
 function onSubmitWalking(id){
     var el = document.getElementById(id);
     if(el == null) return false;
@@ -587,7 +600,8 @@ bt_get_walk_params.addEventListener("click", function(event) {
 
 var collapsibles = [
     $("#settings"),
-    $("#manual_ctrl")
+    $("#manual_ctrl"),
+    $("#head_ctrl")
 ];
 
 var onShow = null; 
@@ -623,6 +637,22 @@ bt_show_manuctrl.addEventListener("click", function(event) {
         onShow.collapse("hide");
         collapsibles[1].collapse("show");
         onShow = collapsibles[1];
+    }
+}, false);
+
+bt_show_headctrl.addEventListener("click", function(event) {
+    event.preventDefault();
+    if(onShow == null){
+        collapsibles[2].collapse("show");
+        onShow = collapsibles[2];
+    }else if(onShow == collapsibles[2]){
+        collapsibles[2].collapse("hide");
+        onShow = null;
+    }
+    else{
+        onShow.collapse("hide");
+        collapsibles[2].collapse("show");
+        onShow = collapsibles[2];
     }
 }, false);
 
