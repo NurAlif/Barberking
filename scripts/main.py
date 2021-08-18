@@ -35,14 +35,14 @@ pubBT = rospy.Publisher('/robotis/open_cr/button', String, queue_size=10)
 pubEnaMod = rospy.Publisher('/robotis/enable_ctrl_module', String, queue_size=10)
 pubWalkCmd = rospy.Publisher('/robotis/walking/command', String, queue_size=10)
 pubSetParams = rospy.Publisher('/robotis/walking/set_params', WalkingParam, queue_size=10)
-pubHeadControl = rospy.Publisher('"/robotis/head_control/set_joint_states"', JointState, queue_size=10)
+pubHeadControl = rospy.Publisher('/robotis/head_control/set_joint_states', JointState, queue_size=10)
 
 currentWalkParams = None # ? params
 walkParams = None
 
 server = None
 
-robotIsOn = True
+robotIsOn = False
 walking_module_enabled = False
 
 walking = Walking()
@@ -145,10 +145,11 @@ t1 = threading.Thread(target=forever_ws, args=(10,))
 
 def sendHeadControl(pitch, yaw):
     js = JointState()
-    js.name.append("head_pitch")
-    js.name.append("head_yaw")
+    js.name.append("head_tilt")
+    js.name.append("head_pan")
     js.position.append(pitch)
     js.position.append(yaw)
+    print(pitch, yaw)
     pubHeadControl.publish(js)
 
 def sendWithWalkParams():
@@ -169,7 +170,7 @@ def sendWithWalkParams():
 
 def enableWalk():
     pubEnaMod.publish("walking_module")
-    pubEnaMod.publish("head_module")
+    pubEnaMod.publish("head_control_module")
 
 def setDxlTorque(): # list comprehension
     global robotIsOn
@@ -183,6 +184,8 @@ def setDxlTorque(): # list comprehension
     syncwrite_msg = SyncWriteItem()
     syncwrite_msg.item_name = "torque_enable"
     for joint_name in joints:
+        if((not isTorqueOn) and (joint_name == "head_pan" or joint_name == "head_tilt")):
+            continue
         syncwrite_msg.joint_name.append(joint_name)
         syncwrite_msg.value.append(isTorqueOn) 
 
@@ -287,14 +290,13 @@ def main():
 
     time.sleep(2)
     getWalkParams()
-    # startRobot()
+    startRobot()
 
     inference.startInference()
 
     while not rospy.is_shutdown():
         toc = time.time()
         delta_t = toc - lastSendParamTic
-        print(delta_t)
         if(delta_t > SEND_PARAM_INTERVAL):
             lastSendParamTic = toc
 

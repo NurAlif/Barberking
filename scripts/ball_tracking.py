@@ -11,7 +11,7 @@ pitch = 0.0
 yaw = 0.0
 
 errorPitch = 0.0
-out_scale = 0.2
+out_scale = 1.0
 
 ball_track = None
 
@@ -23,8 +23,11 @@ def track(error):
     global pid_y
     global pitch
 
+    print(str(error.x) + " " + str(error.y))
+
     out_x = pid_x(error.x) * out_scale
     out_y = pid_y(error.y) * out_scale
+    out_y = 0.0
 
-    pitch = max(min(out_y, 1), 0)
-    yaw = max(min(out_x, 1), 0)
+    pitch = max(min(out_y, 1), -1)
+    yaw = max(min(out_x, 1), -1)

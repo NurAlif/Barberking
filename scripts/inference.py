@@ -51,6 +51,11 @@ class Tracking:
         self.y = 0.0
         self.m = 100.0
 
+    def set(self, tar):
+        self.x = tar.x
+        self.y = tar.y
+        self.m = tar.m
+
 def parse_args():
     desc = 'MJPEG version of trt_yolo'
     parser = argparse.ArgumentParser(description=desc)
@@ -118,7 +123,7 @@ def detect(track_ball):
                 found = True
 
     if found:
-        track_ball = closest
+        track_ball.set(closest)
         lost_count = 0
     else:
         lost_count += 1
@@ -151,7 +156,6 @@ def startInference():
         raise SystemExit('ERROR: file (yolo/%s.trt) not found!' % model)
 
     cam_args = camera_args()
-    print(cam_args.width)
     cam = Camera(cam_args)
     if not cam.isOpened():
         raise SystemExit('ERROR: failed to open camera!')
