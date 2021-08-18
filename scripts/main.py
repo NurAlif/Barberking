@@ -11,6 +11,7 @@ import json
 # websocket
 import threading
 import inference
+import ball_tracking
 
 from walking import Vector2, Vector2yaw, CONTROL_MODE_HEADLESS, CONTROL_MODE_YAWMODE, Walking
 from walk_utils import joints, getWalkParamsDict, setWalkParams
@@ -34,6 +35,7 @@ pubBT = rospy.Publisher('/robotis/open_cr/button', String, queue_size=10)
 pubEnaMod = rospy.Publisher('/robotis/enable_ctrl_module', String, queue_size=10)
 pubWalkCmd = rospy.Publisher('/robotis/walking/command', String, queue_size=10)
 pubSetParams = rospy.Publisher('/robotis/walking/set_params', WalkingParam, queue_size=10)
+pubHeadControl = rospy.Publisher('"/robotis/head_control/set_joint_states"', JointState, queue_size=10)
 
 currentWalkParams = None # ? params
 walkParams = None
@@ -100,6 +102,10 @@ class WS(WebSocket):
         elif cmd == 'gyro_init':
             init_gyro()
             send_message(-1, "controller_msg", "Init gyro success")
+        elif cmd == 'head_direct':
+            headControlDirect(data['params'])
+        elif cmd == 'track_head_control':
+            headControlHandle(data['params'])
 
     def connected(self):
         print(self.address, 'connected')
@@ -137,6 +143,14 @@ def forever_ws(num):
 
 t1 = threading.Thread(target=forever_ws, args=(10,))
 
+def sendHeadControl(pitch, yaw):
+    js = JointState()
+    js.name.append("head_pitch")
+    js.name.append("head_yaw")
+    js.position.append(pitch)
+    js.position.append(yaw)
+    pubHeadControl.publish(js)
+
 def sendWithWalkParams():
     if(walking.control == None): return
 
@@ -155,6 +169,7 @@ def sendWithWalkParams():
 
 def enableWalk():
     pubEnaMod.publish("walking_module")
+    pubEnaMod.publish("head_module")
 
 def setDxlTorque(): # list comprehension
     global robotIsOn
@@ -187,6 +202,17 @@ def startRobot():
         return
     robotIsOn = True
     pubBT.publish("user_long")
+
+def headControlDirect(data):
+    pitch = data["pitch"]
+    yaw = data["yaw"]
+    sendHeadControl(pitch, yaw)
+
+def headControlHandle(data):
+    if(data["enabled"] == True):
+        ball_tracking.isEnabled = True
+    elif(data["enabled"] == False):
+        ball_tracking.isEnabled = False
 
 def setWalkCmd(walkCmd):
     if walkCmd == "start" or walkCmd == "stop" or walkCmd == "balance on" or walkCmd == "balance off" or walkCmd == "save":
@@ -276,6 +302,9 @@ def main():
             sendWithWalkParams()
 
         inference.detect(track_ball)
+        ball_tracking.track(track_ball)
+        sendHeadControl(ball_tracking.pitch, ball_tracking.yaw)
+        
 
 
 def shutdown():
