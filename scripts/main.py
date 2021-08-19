@@ -35,7 +35,7 @@ pubBT = rospy.Publisher('/robotis/open_cr/button', String, queue_size=10)
 pubEnaMod = rospy.Publisher('/robotis/enable_ctrl_module', String, queue_size=10)
 pubWalkCmd = rospy.Publisher('/robotis/walking/command', String, queue_size=10)
 pubSetParams = rospy.Publisher('/robotis/walking/set_params', WalkingParam, queue_size=10)
-pubHeadControl = rospy.Publisher('/robotis/head_control/set_joint_states', JointState, queue_size=10)
+pubHeadControl = rospy.Publisher('/robotis/head_control/set_joint_states', JointState, queue_size=1)
 
 currentWalkParams = None # ? params
 walkParams = None
@@ -106,6 +106,8 @@ class WS(WebSocket):
             headControlDirect(data['params'])
         elif cmd == 'track_head_control':
             headControlHandle(data['params'])
+        elif cmd == 'edit_head_pid':
+            headPIDHandle(data['params'])
 
     def connected(self):
         print(self.address, 'connected')
@@ -149,7 +151,6 @@ def sendHeadControl(pitch, yaw):
     js.name.append("head_pan")
     js.position.append(pitch)
     js.position.append(yaw)
-    print(pitch, yaw)
     pubHeadControl.publish(js)
 
 def sendWithWalkParams():
@@ -216,6 +217,9 @@ def headControlHandle(data):
         ball_tracking.isEnabled = True
     elif(data["enabled"] == False):
         ball_tracking.isEnabled = False
+
+def headPIDHandle(data):
+    ball_tracking.pid_x.tunings(data["p"], data["i"], data["d"])
 
 def setWalkCmd(walkCmd):
     if walkCmd == "start" or walkCmd == "stop" or walkCmd == "balance on" or walkCmd == "balance off" or walkCmd == "save":
@@ -292,7 +296,10 @@ def main():
     getWalkParams()
     startRobot()
 
-    inference.startInference()
+    # inference.startInference()
+
+    val = -0.9
+    dir = 0.01
 
     while not rospy.is_shutdown():
         toc = time.time()
@@ -303,10 +310,20 @@ def main():
             walking.stepToTargetVel()
             sendWithWalkParams()
 
-        inference.detect(track_ball)
+        # inference.detect(track_ball)
+
+        # print(track_ball.x)
+
         ball_tracking.track(track_ball)
+        
         sendHeadControl(ball_tracking.pitch, ball_tracking.yaw)
         
+        val+=dir
+        if(val >= 0.9):
+            dir = -0.1
+        if(val <= -0.9):
+            dir = 0.1
+            
 
 
 def shutdown():

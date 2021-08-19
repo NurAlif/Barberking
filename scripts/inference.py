@@ -22,8 +22,8 @@ res_x = 640.0
 res_y = 480.0
 
 max_lost = 120
-goto_zero = 0
-stop_zone = 0.15
+goto_zero = 0.01    
+stop_zone = 0.20
 
 offset_in_x = 0.13
 offset_in_y = 0.15
@@ -126,19 +126,19 @@ def detect(track_ball):
         track_ball.set(closest)
         lost_count = 0
     else:
-        lost_count += 1
+        # lost_count += 1
 
-        if track_ball.x < -stop_zone:
-            track_ball.x += goto_zero
-        if track_ball.x > stop_zone:
-            track_ball.x -= goto_zero
-        if track_ball.y < -stop_zone:
-            track_ball.y += goto_zero
-        if track_ball.y > stop_zone:
-            track_ball.y -= goto_zero    
+        # if track_ball.x < -stop_zone:
+        #     track_ball.x += goto_zero
+        # if track_ball.x > stop_zone:
+        #     track_ball.x -= goto_zero
+        # if track_ball.y < -stop_zone:
+        #     track_ball.y += goto_zero
+        # if track_ball.y > stop_zone:
+        #     track_ball.y -= goto_zero    
 
-        if lost_count > max_lost:
-            lost_count = 0
+        # if lost_count > max_lost:
+        #     lost_count = 0
             track_ball.x = 0.0
             track_ball.y = 0.0
 
