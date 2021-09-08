@@ -34,25 +34,31 @@ class Vector2yaw:
         targety = target.y
         targetyaw = target.yaw
         if(selfx < targetx): 
-            self.x += step.x
-            if selfx > targetx: self.x = targetx
+            selfx += step.x
+            if selfx > targetx: selfx = targetx
         elif(selfx > targetx): 
-            self.x -= step.x
-            if selfx < targetx: self.x = targetx
+            selfx -= step.x
+            if selfx < targetx: selfx = targetx
+        
+        self.x = selfx
 
         if(selfy < targety): 
-            self.y += step.y
-            if selfy > targety: self.y = targety
+            selfy += step.y
+            if selfy > targety: selfy = targety
         elif(selfy > targety): 
-            self.y -= step.y
-            if selfy < targety: self.y = targety
+            selfy -= step.y
+            if selfy < targety: selfy = targety
+
+        self.y = selfy
 
         if(selfyaw < targetyaw): 
-            self.yaw += step.yaw
-            if selfyaw > targetyaw: self.yaw = targetyaw
+            selfyaw += step.yaw
+            if selfyaw > targetyaw: selfyaw = targetyaw
         elif(selfyaw > targetyaw): 
-            self.yaw -= step.yaw
-            if selfyaw < targetyaw: self.yaw = targetyaw
+            selfyaw -= step.yaw
+            if selfyaw < targetyaw: selfyaw = targetyaw
+        
+        self.yaw = selfyaw
 
 
 CONTROL_MODE_HEADLESS = 0
@@ -60,15 +66,13 @@ CONTROL_MODE_YAWMODE = 1
 
 class Walking:
     def __init__(self):
-        global CONTROL_MODE_YAWMODE
-        global CONTROL_MODE_HEADLESS
         self.control = None # held controller socket id
         self.turn_mode = CONTROL_MODE_YAWMODE
         self.max_speed = 40
         self.stationary_offset = Vector2yaw()
         self.feed_rate = 10
-        self.step = Vector2yaw(0.001,0.001,0.001)
-        self.vectorMultiplier = Vector2yaw(0.02, 0.02, 0.02)
+        self.step = Vector2yaw(0.001,0.001,0.01)
+        self.vectorMultiplier = Vector2yaw(0.02, 0.02, 0.2)
         self.vectorCurrent = Vector2yaw()
         self.vectorTarget = Vector2yaw() # normalized
 
@@ -76,7 +80,6 @@ class Walking:
         self.vectorTarget = Vector2yaw.add(Vector2yaw.multiply(newTarget, self.vectorMultiplier), self.stationary_offset)
 
     def stepToTargetVel(self):
-        print(self.step.x)
         self.vectorCurrent.stepToTarget(self.vectorTarget, self.step)
         # self.vectorCurrent.set(self.vectorTarget)
     
