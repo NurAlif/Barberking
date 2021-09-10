@@ -25,6 +25,9 @@ WalkingModule::WalkingModule()
     : control_cycle_msec_(8),
       DEBUG(false)
 {
+
+  pitchPID = WalkPID(10, 1, 0.1);
+
   enable_ = false;
   module_name_ = "walking_module";
   control_mode_ = robotis_framework::PositionControl;
@@ -189,10 +192,16 @@ void WalkingModule::angleCorrection(const sensor_msgs::Imu::ConstPtr &imu){
   Eigen::Vector3d euler = q.toRotationMatrix().eulerAngles(0, 1, 2);
 
   sensorPitch = euler[1];  /// 1
+  if(sensorPitch > 0) sensorPitch = M_PIWalk - sensorPitch;
+
+  pidWalkXcorrection();
+
 }
 
 double WalkingModule::pidWalkXcorrection(){
-  return pitchPID.compute(sensorPitch - (zeroPitch + zeroPitchOffset)) * PIDWalkScale;
+  double result = pitchPID.compute(sensorPitch - (zeroPitch + zeroPitchOffset)) * PIDWalkScale;
+  ROS_INFO("Result [%f]", result);
+  return result;
 }
 
 void WalkingModule::setZeroAngle(){
@@ -218,28 +227,10 @@ void WalkingModule::walkingCommandCallback(const std_msgs::String::ConstPtr &msg
     return;
   }
 
-  if (msg->data == "start")
+  if (msg->data == "start"){
+    setZeroAngle();
     startWalking();
-  else if (msg->data == "stop")
-    stop();
-  else if (msg->data == "balance on")
-    walking_param_.balance_enable = true;
-  else if (msg->data == "balance off")
-    walking_param_.balance_enable = false;
-  else if (msg->data == "save")
-    saveWalkingParam(param_path_);
-}
-
-void WalkingModule::walkingCommandCallback(const std_msgs::String::ConstPtr &msg)
-{
-  if(enable_ == false)
-  {
-    ROS_WARN("walking module is not ready.");
-    return;
   }
-
-  if (msg->data == "start")
-    startWalking();
   else if (msg->data == "stop")
     stop();
   else if (msg->data == "balance on")
@@ -248,6 +239,8 @@ void WalkingModule::walkingCommandCallback(const std_msgs::String::ConstPtr &msg
     walking_param_.balance_enable = false;
   else if (msg->data == "save")
     saveWalkingParam(param_path_);
+  else if (msg->data == "set zero")
+    setZeroAngle();
 }
 
 void WalkingModule::walkingParameterCallback(const op3_walking_module_msgs::WalkingParam::ConstPtr &msg)
@@ -387,11 +380,9 @@ void WalkingModule::updateTimeParam()
 
 void WalkingModule::updateMovementParam()
 {
-  
-
 
   // Forward/Back
-  x_move_amplitude_ = walking_param_.x_move_amplitude;
+  x_move_amplitude_ = walking_param_.x_move_amplitude + (pitchPID.output * 0.02);
   x_swap_amplitude_ = walking_param_.x_move_amplitude * walking_param_.step_fb_ratio;
 
   if (previous_x_move_amplitude_ == 0)
