@@ -50,11 +50,15 @@
 namespace robotis_op
 {
 
+  # define M_PIWalk 3.14159265358979323846
+
 
 // ===============================    PID 
 class WalkPID{
-  std::chrono::milliseconds sampleTime;
-  std::chrono::milliseconds lastTime;
+  public:
+
+  double sampleTime;
+  double lastTime;
   double lastInput;
   double target;
   double output;
@@ -64,21 +68,21 @@ class WalkPID{
   double i;
   double d;
 
-  double min;
-  double max;
+  double min = -1;
+  double max = 1;
 
-
+  WalkPID(){};
   WalkPID (double _p, double _i, double _d){
-    std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(
-        std::chrono::system_clock::now().time_since_epoch()
-    );
+    // std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(
+    //     std::chrono::system_clock::now().time_since_epoch()
+    // );
 
     sampleTime = 100;
     target = 0;
     output = 0;
     errorSum = 0;
     lastInput = 0;
-    lastTime = ms - sampleTime;
+    // lastTime = ms.count() - sampleTime;
 
     setTunings(_p, _i, _d);
   };
@@ -90,7 +94,7 @@ class WalkPID{
     d = _d / ratio;
   };
 
-  void setSampleTime(std::chrono::milliseconds _sampleTime){
+  void setSampleTime(double _sampleTime){
     double ratio = sampleTime / _sampleTime;
     i *= ratio;
     d /= ratio;
@@ -107,25 +111,25 @@ class WalkPID{
   };
 
   double compute(double input){
-    std::chrono::milliseconds now = std::chrono::duration_cast< std::chrono::milliseconds >(
-        std::chrono::system_clock::now().time_since_epoch()
-    );
+    // std::chrono::milliseconds now = std::chrono::duration_cast< std::chrono::milliseconds >(
+    //     std::chrono::system_clock::now().time_since_epoch()
+    // );
 
-    std::chrono::milliseconds time_diff = now - lastTime;
+    // double time_diff = now.count() - lastTime;
 
-    if(time_diff >= sampleTime){
+    // if(time_diff >= sampleTime){
       double error = target - input;
-      inputDiff = input - lastInput;
+      double inputDiff = input - lastInput;
 
       errorSum = std::max(min, std::min(max, errorSum + (i * error)));
       output = std::max(min, std::min(max, (p * error) + errorSum - (d * inputDiff)));
       lastInput = input;
-      lastTime = now;
-    }
+      // lastTime = now.count();
+    // }
 
     return output;
   }
-}
+};
 
 
 
@@ -211,6 +215,7 @@ class WalkingModule : public robotis_framework::MotionModule, public robotis_fra
   void saveWalkingParam(std::string &path);
   void iniPoseTraGene(double mov_time);
   void setZeroAngle();
+  double pidWalkXcorrection();
 
   double zeroPitch = 0;
   double zeroOffsetScale = 10;
@@ -218,7 +223,7 @@ class WalkingModule : public robotis_framework::MotionModule, public robotis_fra
   double zeroPitchOffset = 0;
   double PIDWalkScale = 0.1;
   double sensorPitch = 0;
-  WalkPID pitchPID= WalkPID(10, 1, 0.1);
+  WalkPID pitchPID;
 
   OP3KinematicsDynamics* op3_kd_;
   int control_cycle_msec_;
