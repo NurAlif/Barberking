@@ -169,7 +169,7 @@ void WalkingModule::queueThread()
 
   /* publish topics */
   status_msg_pub_ = ros_node.advertise<robotis_controller_msgs::StatusMsg>("robotis/status", 1);
-  balance_monitor_pub_ = ros_node.advertise<std_msgs::String>("balance-monitor", 1);
+  balance_monitor_pub_ = ros_node.advertise<std_msgs::String>("balance_monitor", 1);
 
   /* ROS Service Callback Functions */
   ros::ServiceServer get_walking_param_server = ros_node.advertiseService("/robotis/walking/get_params",
@@ -183,7 +183,7 @@ void WalkingModule::queueThread()
                                                          &WalkingModule::walkingParameterCallback, this);
   ros::Subscriber imu_sub = ros_node.subscribe("/robotis/open_cr/imu", 0, &WalkingModule::angleCorrection, this);
 
-  ros::Subscriber correction_cmd_sub = ros_node.subscribe("correction-cmd-sub", 0, &WalkingModule::correctionCmdCallback, this);
+  // ros::Subscriber correction_cmd_sub = ros_node.subscribe("correction_cmd_sub", 0, &WalkingModule::correctionCmdCallback, this);
 
   ros::WallDuration duration(control_cycle_msec_ / 1000.0);
   while(ros_node.ok())
@@ -197,7 +197,7 @@ void WalkingModule::angleCorrection(const sensor_msgs::Imu::ConstPtr &imu){
   sensorPitch = euler[1];  /// 1
   if(sensorPitch > 0) sensorPitch = M_PIWalk - sensorPitch;
 
-  pidWalkXcorrection();
+  pidWalkXcorrection(); 
 
 }
 
@@ -215,7 +215,7 @@ void WalkingModule::setZeroAngle(){
 
 void WalkingModule::sendMonitorCorrection(double inputPitch, double correction){
   std::stringstream sstm;
-  sstm << "{" << "\"input_pitch\":" << inputPitch << ", \"corr_pitch\":" << correction << "}";
+  sstm << "{" << "'input_pitch':" << inputPitch << ", 'corr_pitch':" << correction << "}";
   std_msgs::String msg;
   msg.data = sstm.str();
 
