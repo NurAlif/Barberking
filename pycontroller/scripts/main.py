@@ -155,7 +155,7 @@ def sendHeadControl(pitch, yaw):
 
 def sendWithWalkParams():
     if(walking.control == None): return
-
+    
     global walkParams
     global pubSetParams
     walkParams.x_move_amplitude = walking.vectorCurrent.y
@@ -260,6 +260,9 @@ def handleImu(imu_msg_):
     global imu
     imu = imu_msg_
 
+def handleBalanceMonitor(msg):
+    send_message(-1, "balance_monitor", msg.data)
+
 def onFinishInitPose():
     enableWalk()
 
@@ -288,6 +291,7 @@ def main():
 
     #rospy.Subscriber("/robotis/open_cr/imu", Imu, handleImu)
     rospy.Subscriber("/robotis/status", StatusMsg, handleStatusMsg)
+    rospy.Subscriber("balance_monitor", String, handleBalanceMonitor)
 
 
     print("program runnning")
