@@ -41,6 +41,7 @@
 #include "op3_walking_module_msgs/WalkingParam.h"
 #include "op3_walking_module_msgs/GetWalkingParam.h"
 #include "op3_walking_module_msgs/SetWalkingParam.h"
+#include "op3_walking_module_msgs/WalkingCorrection.h"
 
 #include "robotis_framework_common/motion_module.h"
 #include "robotis_math/robotis_math.h"
@@ -197,6 +198,7 @@ class WalkingModule : public robotis_framework::MotionModule, public robotis_fra
   bool getWalkigParameterCallback(op3_walking_module_msgs::GetWalkingParam::Request &req,
                                   op3_walking_module_msgs::GetWalkingParam::Response &res);
   void angleCorrection(const sensor_msgs::Imu::ConstPtr &imu);
+  void correctionCmdCallback(const op3_walking_module_msgs::WalkingCorrection::ConstPtr &correction);
 
   /* ROS Service Callback Functions */
   void processPhase(const double &time_unit);
@@ -216,6 +218,7 @@ class WalkingModule : public robotis_framework::MotionModule, public robotis_fra
   void iniPoseTraGene(double mov_time);
   void setZeroAngle();
   double pidWalkXcorrection();
+  void sendMonitorCorrection(double inputPitch, double correction);
 
   double zeroPitch = 0;
   double zeroOffsetScale = 10;
@@ -234,6 +237,7 @@ class WalkingModule : public robotis_framework::MotionModule, public robotis_fra
   /* ROS Topic Publish Functions */
   ros::Publisher robot_pose_pub_;
   ros::Publisher status_msg_pub_;
+  ros::Publisher balance_monitor_pub_;
 
   Eigen::MatrixXd calc_joint_tra_;
 
