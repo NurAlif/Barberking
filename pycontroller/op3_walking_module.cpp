@@ -26,7 +26,7 @@ WalkingModule::WalkingModule()
       DEBUG(false)
 {
 
-  pitchPID = WalkPID(10, 1, 0.1);
+  pitchPID = WalkPID(1, 0.1, 1);
 
   enable_ = false;
   module_name_ = "walking_module";
@@ -169,6 +169,7 @@ void WalkingModule::queueThread()
 
   /* publish topics */
   status_msg_pub_ = ros_node.advertise<robotis_controller_msgs::StatusMsg>("robotis/status", 1);
+  balance_monitor_pub_ = ros_node.advertise<std_msgs::String>("balance-monitor", 1);
 
   /* ROS Service Callback Functions */
   ros::ServiceServer get_walking_param_server = ros_node.advertiseService("/robotis/walking/get_params",
@@ -181,6 +182,8 @@ void WalkingModule::queueThread()
   ros::Subscriber walking_param_sub = ros_node.subscribe("/robotis/walking/set_params", 0,
                                                          &WalkingModule::walkingParameterCallback, this);
   ros::Subscriber imu_sub = ros_node.subscribe("/robotis/open_cr/imu", 0, &WalkingModule::angleCorrection, this);
+
+  ros::Subscriber correction_cmd_sub = ros_node.subscribe("correction-cmd-sub", 0, &WalkingModule::correctionCmdCallback, this);
 
   ros::WallDuration duration(control_cycle_msec_ / 1000.0);
   while(ros_node.ok())
@@ -200,12 +203,23 @@ void WalkingModule::angleCorrection(const sensor_msgs::Imu::ConstPtr &imu){
 
 double WalkingModule::pidWalkXcorrection(){
   double result = pitchPID.compute(sensorPitch - (zeroPitch + zeroPitchOffset)) * PIDWalkScale;
-  ROS_INFO("Result [%f]", result);
+  // ROS_INFO("Result [%f]", result);
+  sendMonitorCorrection(sensorPitch, result);
+  
   return result;
 }
 
 void WalkingModule::setZeroAngle(){
   zeroPitch = sensorPitch;
+}
+
+void WalkingModule::sendMonitorCorrection(double inputPitch, double correction){
+  std::stringstream sstm;
+  sstm << "{" << "\"input_pitch\":" << inputPitch << ", \"corr_pitch\":" << correction << "}";
+  std_msgs::String msg;
+  msg.data = sstm.str();
+
+  balance_monitor_pub_.publish(msg);
 }
 
 void WalkingModule::publishStatusMsg(unsigned int type, std::string msg)
@@ -382,7 +396,7 @@ void WalkingModule::updateMovementParam()
 {
 
   // Forward/Back
-  x_move_amplitude_ = walking_param_.x_move_amplitude + (pitchPID.output * 0.02);
+  x_move_amplitude_ = walking_param_.x_move_amplitude + (pitchPID.output * 0.05);
   x_swap_amplitude_ = walking_param_.x_move_amplitude * walking_param_.step_fb_ratio;
 
   if (previous_x_move_amplitude_ == 0)
