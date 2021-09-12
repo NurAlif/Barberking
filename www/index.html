@@ -42,9 +42,11 @@
         <button id="bt_show_manuctrl"
             class="border rounded-0 btn btn-secondary btn-block shadow-none btn-md py-2 m-0 border-right-0 border-bottom-0 border-top-0 border-dark">Manual
             Move</button>
-        <button id="bt_show_manuctrl"
+        <button id="bt_show_headctrl"
             class="border rounded-0 btn btn-secondary btn-block shadow-none btn-md py-2 m-0 border-right-0 border-bottom-0 border-top-0 border-dark">Head
             Control</button>
+        <button id="bt_show_pidmon"
+            class="border rounded-0 btn btn-secondary btn-block shadow-none btn-md py-2 m-0 border-right-0 border-bottom-0 border-top-0 border-dark">PID Monitor</button>
     </div>
 
     <div class="container-fluid p-3 bg-dark text-white">
@@ -400,7 +402,34 @@
             </div>
         </div>
 
-        <div id="pings" class="collapse py-3">
+        <div id="head_ctrl" class="collapse py-3">
+            
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text bg-secondary text-light" id="inputGroup-sizing-default">Yaw</span>
+                </div>
+                <input id="head_yaw" type="number" class="form-control bg-dark text-light walking-conf" aria-label="Default" value="0.0"
+                    aria-describedby="inputGroup-sizing-default">
+                <div class="input-group-append">
+                    <button onclick='onSubmitHead("head_yaw")' class="btn btn-outline-light walking-conf" type="button">Submit</button>
+                </div>
+            </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text bg-secondary text-light" id="inputGroup-sizing-default">Pitch</span>
+                </div>
+                <input id="head_pitch" type="number" class="form-control bg-dark text-light walking-conf" aria-label="Default" value="0.0"
+                    aria-describedby="inputGroup-sizing-default">
+                <div class="input-group-append">
+                    <button onclick='onSubmitHead("head_pitch")' class="btn btn-outline-light walking-conf" type="button">Submit</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pid_mon" class="collapse py-3">
+            <canvas id="pid_mon_graph" width="200" height="100" style="border:1px solid #000000;">
+            </canvas>
+            
         </div>
     </div>
 
@@ -450,6 +479,8 @@
 
     <!-- <script type="text/javascript" src="editor.js"></script> -->
     <script type="text/javascript" src="analog.js"></script>
+    <script type="text/javascript" src="keyboard.js"></script>
+    <script type="text/javascript" src="pidmonitor.js"></script>
     <script type="text/javascript" src="main.js"></script>
 </body>
 
