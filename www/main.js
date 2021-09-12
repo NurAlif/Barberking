@@ -1,5 +1,5 @@
 ws = new WebSocket("ws://"+ "192.168.43.187" +":8077");
-            
+
 var con_h1 = document.getElementById("con_h1");
 var con_log = document.getElementById("log_container");
 var voltage_badge = document.getElementById("voltage_badge");
@@ -8,6 +8,8 @@ var bt_walk_toggle = document.querySelector("#bt_walk_toggle");
 var bt_get_walk_params = document.querySelector("#bt_get_walk_params");
 var bt_show_settings = document.querySelector("#bt_show_settings");
 var bt_show_manuctrl = document.querySelector("#bt_show_manuctrl");
+var bt_show_headctrl = document.querySelector("#bt_show_headctrl");
+var bt_show_pidmon = document.querySelector("#bt_show_pidmon");
 var bt_send_stationary = document.querySelector("#bt_send_stationary");
 var bt_submit_settings = document.querySelector("#bt_submit_settings");
 $("#"+bt_send_stationary.id).collapse("hide");
@@ -24,6 +26,9 @@ var isTorqueOn = false;
 var isWalking = false;
 var selfID = -1;
 var hasControlID = -1;
+
+var pidMonGraph =new GraphMonitor(document.getElementById("pid_mon_graph"));
+pidMonGraph.build();
 
 
 var cmdTimeout = 3;
@@ -239,7 +244,7 @@ function updateWalkingConf(params) {
     let obj = params
 
     hasControlID = obj.control; 
-    dropdownTurnMode.setActive(obj.turn_mode === 1?TURN_MODE_YAW:TURN_MODE_HEADLESS);
+    dropdownTurnMode.setActive(obj.turn_mode === 1? TURN_MODE_YAW : TURN_MODE_HEADLESS);
     //obj.stationary_offset;
 
     input_walking_turnspeed.value = obj.step[2];
@@ -326,7 +331,7 @@ ws.onopen = function (e){
 };
 
 ws.onmessage = function (event){
-    console.log(event.data)
+    // console.log(event.data)
     var obj = JSON.parse(event.data);
     
     if(obj.cmd == null) return;
@@ -359,6 +364,9 @@ ws.onmessage = function (event){
         handleControlOverrideUpdate(obj.params);
     }if(cmd == "device_connected"){
         handleDeviceConnected(obj.params);
+    }if(cmd == "balance_monitor"){
+        pidMonGraph.addItems(obj.params);
+        pidMonGraph.updateAllLine();
     }
 }
 
@@ -374,6 +382,18 @@ function onSubmit(id){
     var el = document.getElementById(id);
     if(el == null) return false;
     sendParameterized("set_walk_params", '["'+ id.substring(4, id.length) +'",'+ el.value +']');
+    return false;
+}
+
+function onSubmitHead(id){
+    var el = document.getElementById(id);
+    param = {
+        "yaw" : document.getElementById("head_yaw"),
+        "pitch" : document.getElementById("head_pitch")
+    }
+
+    sendParameterized("head_direct", JSON.stringify(param));
+    console.log(id + el.value);
     return false;
 }
 
@@ -426,13 +446,16 @@ function onSubmitCB(id){
 }
 
 function sendWalking(){
+    if(isKeyboardHasControl){
+        let v = getKeyboardControlVector();
+        setAnalogPointer(v.x, v.y);
+    }
+
     let obj = {
         x: analogValue.x,
         y: analogValue.y,
-        yaw: analogValue.y
+        yaw: analogValue.x
     };
-    
-    console.log(JSON.stringify(obj));
 
     sendParameterized('set_walking', JSON.stringify(obj));
 }
@@ -584,7 +607,9 @@ bt_get_walk_params.addEventListener("click", function(event) {
 
 var collapsibles = [
     $("#settings"),
-    $("#manual_ctrl")
+    $("#manual_ctrl"),
+    $("#head_ctrl"),
+    $("#pid_mon")
 ];
 
 var onShow = null; 
@@ -623,6 +648,38 @@ bt_show_manuctrl.addEventListener("click", function(event) {
     }
 }, false);
 
+bt_show_headctrl.addEventListener("click", function(event) {
+    event.preventDefault();
+    if(onShow == null){
+        collapsibles[2].collapse("show");
+        onShow = collapsibles[2];
+    }else if(onShow == collapsibles[2]){
+        collapsibles[2].collapse("hide");
+        onShow = null;
+    }
+    else{
+        onShow.collapse("hide");
+        collapsibles[2].collapse("show");
+        onShow = collapsibles[2];
+    }
+}, false);
+
+bt_show_pidmon.addEventListener("click", function(event) {
+    event.preventDefault();
+    if(onShow == null){
+        collapsibles[3].collapse("show");
+        onShow = collapsibles[3];
+    }else if(onShow == collapsibles[3]){
+        collapsibles[3].collapse("hide");
+        onShow = null;
+    }
+    else{
+        onShow.collapse("hide");
+        collapsibles[3].collapse("show");
+        onShow = collapsibles[3];
+    }
+}, false);
+
 bt_send_stationary.addEventListener("click", function(event) {
     sendCmd("set_walking_offset");
 }, false);
@@ -656,8 +713,10 @@ timerResponsiveCmd = setInterval(function (){
     }
 }, 1000);
 
+
 var realTimeControl = setInterval(function (){
     if(hasControlID == selfID[1] && selfID[1] != -1){
         sendWalking();
     }
 }, 100);
+
