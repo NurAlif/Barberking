@@ -26,6 +26,13 @@ WalkingModule::WalkingModule()
       DEBUG(false)
 {
 
+  std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(
+      std::chrono::system_clock::now().time_since_epoch()
+  );
+
+  startTime = ms.count();
+  lastTimePID = ms.count();
+
   pitchPID = WalkPID(1, 0.1, 1);
 
   enable_ = false;
@@ -202,20 +209,27 @@ void WalkingModule::angleCorrection(const sensor_msgs::Imu::ConstPtr &imu){
 }
 
 double WalkingModule::pidWalkXcorrection(){
-  double result = pitchPID.compute(sensorPitch - (zeroPitch + zeroPitchOffset)) * PIDWalkScale;
-  // ROS_INFO("Result [%f]", result);
-  sendMonitorCorrection(sensorPitch, result);
-  
-  return result;
+  std::chrono::milliseconds now = std::chrono::duration_cast< std::chrono::milliseconds >(
+      std::chrono::system_clock::now().time_since_epoch()
+  );
+
+  double time_diff = now.count() - lastTimePID;
+  if(time_diff >= intervalPID){
+    lastTimePID = now.count();
+    lastPIDResult = pitchPID.compute(sensorPitch - (zeroPitch + zeroPitchOffset)) * PIDWalkScale;
+    // ROS_INFO("Result [%f]", result);
+    sendMonitorCorrection(time_diff, sensorPitch, lastPIDResult);
+  }
+  return lastPIDResult;
 }
 
 void WalkingModule::setZeroAngle(){
   zeroPitch = sensorPitch;
 }
 
-void WalkingModule::sendMonitorCorrection(double inputPitch, double correction){
+void WalkingModule::sendMonitorCorrection(double deltaT, double inputPitch, double correction){
   std::stringstream sstm;
-  sstm << "{" << "'input_pitch':" << inputPitch << ", 'corr_pitch':" << correction << "}";
+  sstm << R"({"timestamp": )" << deltaT << R"(, "input_pitch":)" << inputPitch << R"(, "corr_pitch":)" << correction << "}";
   std_msgs::String msg;
   msg.data = sstm.str();
 
