@@ -74,16 +74,16 @@ class WalkPID{
 
   WalkPID(){};
   WalkPID (double _p, double _i, double _d){
-    std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(
-        std::chrono::system_clock::now().time_since_epoch()
-    );
+    // std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(
+    //     std::chrono::system_clock::now().time_since_epoch()
+    // );
 
     sampleTime = 500;
     target = 0;
     output = 0;
     errorSum = 0;
     lastInput = 0;
-    lastTime = ms.count() - sampleTime;
+    // lastTime = ms.count() - sampleTime;
 
     setTunings(_p, _i, _d);
   };
@@ -112,21 +112,21 @@ class WalkPID{
   };
 
   double compute(double input){
-    std::chrono::milliseconds now = std::chrono::duration_cast< std::chrono::milliseconds >(
-        std::chrono::system_clock::now().time_since_epoch()
-    );
+    // std::chrono::milliseconds now = std::chrono::duration_cast< std::chrono::milliseconds >(
+    //     std::chrono::system_clock::now().time_since_epoch()
+    // );
 
-    double time_diff = now.count() - lastTime;
+    // double time_diff = now.count() - lastTime;
 
-    if(time_diff >= sampleTime){
+    // if(time_diff >= sampleTime){
       double error = target - input;
       double inputDiff = input - lastInput;
 
       errorSum = std::max(min, std::min(max, errorSum + (i * error)));
       output = std::max(min, std::min(max, (p * error) + errorSum - (d * inputDiff)));
       lastInput = input;
-      lastTime = now.count();
-    }
+      // lastTime = now.count();
+    // }
 
     return output;
   }
@@ -218,7 +218,7 @@ class WalkingModule : public robotis_framework::MotionModule, public robotis_fra
   void iniPoseTraGene(double mov_time);
   void setZeroAngle();
   double pidWalkXcorrection();
-  void sendMonitorCorrection(double inputPitch, double correction);
+  void sendMonitorCorrection(double deltaT, double inputPitch, double correction);
 
   double zeroPitch = 0;
   double zeroOffsetScale = 10;
@@ -227,6 +227,11 @@ class WalkingModule : public robotis_framework::MotionModule, public robotis_fra
   double PIDWalkScale = 0.1;
   double sensorPitch = 0;
   WalkPID pitchPID;
+
+  double startTime = 0;
+  double lastTimePID = 0;
+  double intervalPID = 5000;
+  double lastPIDResult = 0;
 
   OP3KinematicsDynamics* op3_kd_;
   int control_cycle_msec_;
