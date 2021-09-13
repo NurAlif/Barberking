@@ -202,22 +202,22 @@ void WalkingModule::angleCorrection(const sensor_msgs::Imu::ConstPtr &imu){
   Eigen::Vector3d euler = q.toRotationMatrix().eulerAngles(0, 1, 2);
 
   sensorPitch = euler[1];  /// 1
-  if(sensorPitch > 0) sensorPitch = M_PIWalk - sensorPitch;
+  if(sensorPitch < 0) sensorPitch = -M_PIWalk - sensorPitch;
 
   pidWalkXcorrection(); 
 
 }
 
 double WalkingModule::pidWalkXcorrection(){
-  std::chrono::milliseconds now = std::chrono::duration_cast< std::chrono::milliseconds >(
+  unsigned long long now = std::chrono::duration_cast< std::chrono::milliseconds >(
       std::chrono::system_clock::now().time_since_epoch()
-  );
+  ).count();
 
-  double time_diff = now.count() - lastTimePID;
+  long time_diff = now - lastTimePID;
   if(time_diff >= intervalPID){
-    lastTimePID = now.count();
+    lastTimePID = now;
     lastPIDResult = pitchPID.compute(sensorPitch - (zeroPitch + zeroPitchOffset)) * PIDWalkScale;
-    // ROS_INFO("Result [%f]", result);
+    ROS_INFO("Result [%f]", sensorPitch);
     sendMonitorCorrection(time_diff, sensorPitch, lastPIDResult);
   }
   return lastPIDResult;
@@ -229,6 +229,7 @@ void WalkingModule::setZeroAngle(){
 
 void WalkingModule::sendMonitorCorrection(double deltaT, double inputPitch, double correction){
   std::stringstream sstm;
+
   sstm << R"({"timestamp": )" << deltaT << R"(, "input_pitch":)" << inputPitch << R"(, "corr_pitch":)" << correction << "}";
   std_msgs::String msg;
   msg.data = sstm.str();
