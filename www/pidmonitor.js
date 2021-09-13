@@ -23,22 +23,25 @@ var GraphMonitor = function(el){
     this.width = 500,
     this.length = 30,
     this.scaleX = 1,
-    this.scaleY = 0,
+    this.scaleY = 1,
     this.lines = [],
+    this.centerH = 0,
     this.build = function (){
         var ctx = this.canvas.getContext("2d");
         this.canvas.setAttribute("height",this.height);
         this.canvas.setAttribute("width", this.width);
         this.lines[0] = new graphLine("red");
         this.lines[1] = new graphLine("blue");
-
+        this.centerH = this.height/2;
         
     },
     this.updateAllLine = function(){
-        var ratioX = this.scaleX * this.width;
+        var ratioX = this.scaleX;
         var ratioY = this.scaleY * this.height;
 
         var ctx = this.canvas.getContext("2d");
+
+        ctx.clearRect(0, 0, this.width, this.height);
         
         ctx.lineWidth = 4;
 
@@ -53,17 +56,18 @@ var GraphMonitor = function(el){
 
             var item = queue[len-1];
             var posX = this.width;
-            var posY = ratioY * item.value;
+            var posY = ratioY * item.value + this.centerH;
+            queue[len-1].x = posX;
             ctx.moveTo(posX, posY);
 
             for (var i = len-2; i >= 0; i--){
                 var item = queue[i];
-                var past = queue[i-1];
-                var posX = past.x - ratioX * item.timeStamp;
-                var posY = ratioY * item.value;
+                var past = queue[i+1];
+                var posX = past.x - (ratioX * item.timeStamp);
+                var posY = ratioY * item.value + this.centerH;
                 ctx.lineTo(posX, posY);
-                console.log(posX +"   "+ posY);
-                item.x = posX;
+                console.log(posX +"   "+ item.timeStamp);
+                queue[i].x = posX;
 
             }
             ctx.stroke();
@@ -73,8 +77,7 @@ var GraphMonitor = function(el){
     },
     this.addItems = function(str){
         var obj = JSON.parse(str.replace('\\', ''));
-        var timestamp = obj.timestamp;
-
+        var timestamp = obj.timestamp*0.1;
         this.lines[0].addItem(new fieldItem(timestamp, obj.input_pitch));
         this.lines[1].addItem(new fieldItem(timestamp, obj.corr_pitch));
     }
