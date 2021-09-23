@@ -78,7 +78,7 @@ var GraphMonitor = function(el){
         var obj = JSON.parse(str.replace('\\', ''));
         var timestamp = obj.timestamp*0.1;
         this.lines[0].addItem(new fieldItem(timestamp, obj.input_pitch*0.05));
-        this.lines[1].addItem(new fieldItem(timestamp, obj.corr_pitch*2));
+        this.lines[1].addItem(new fieldItem(timestamp, obj.corr_pitch*0.05));
     }
 };
 
